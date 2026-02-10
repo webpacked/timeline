@@ -1,0 +1,439 @@
+Phase 1
+Timeline Core Library - Implementation Walkthrough
+This walkthrough explains what we built, why we built it this way, and how to use it.
+
+What We Built
+A framework-agnostic timeline editor core - the "engine" that powers timeline-based applications like video editors, audio DAWs, or animation tools.
+
+Key Principle: Separation of Concerns
+┌─────────────────────────────────────┐
+│         UI Layer (React/Vue)        │  ← You build this
+│  - Rendering                        │
+│  - Mouse/keyboard events            │
+│  - Visual feedback                  │
+└─────────────────────────────────────┘
+              ↓ uses
+┌─────────────────────────────────────┐
+│      Timeline Core (this library)   │  ← We built this
+│  - Data structures                  │
+│  - Pure functions                   │
+│  - Time calculations                │
+│  - Snapping logic                   │
+└─────────────────────────────────────┘
+The core has ZERO knowledge of:
+
+DOM or rendering
+React, Vue, or any framework
+Mouse/keyboard events
+Canvas or WebGL
+Architecture Overview
+1. Time Representation
+Decision: Milliseconds as the base unit
+
+typescript
+type TimeMs = number & { readonly __brand: 'TimeMs' };
+const time = timeMs(5000); // 5 seconds
+Why milliseconds?
+
+Precise enough for video (1ms = sub-frame at 60fps)
+JavaScript's native time unit
+Easy to convert to frames, seconds, or beats
+2. Immutable State Pattern
+All operations return new objects:
+
+typescript
+// ❌ BAD: Mutating state
+clip.start = 3000;
+// ✅ GOOD: Immutable update
+const newClip = moveClip(clip, timeMs(3000));
+Benefits:
+
+Predictable state changes
+Easy undo/redo
+Framework-friendly (React/Vue detect changes)
+Easier to debug
+3. ID-Based References
+Entities reference each other by ID, not direct references:
+
+typescript
+interface Clip {
+  id: string;
+  trackId: string;  // Reference to track, not the track object
+  // ...
+}
+Why?
+
+Prevents circular references
+Easy to serialize/deserialize
+Decouples entities
+Core Components
+Component 1: Timeline
+The root container for everything
+
+typescript
+interface Timeline {
+  id: string;
+  name: string;
+  duration: TimeMs;      // Total timeline length
+  tracks: Track[];       // Ordered layers
+  markers: Marker[];     // Global timeline markers
+}
+Key concept: Timeline contains CONTENT (tracks, clips, markers), not EDITING STATE (selection, viewport).
+
+Component 2: Track
+A horizontal lane for clips (like layers in Photoshop)
+
+typescript
+interface Track {
+  id: string;
+  name: string;
+  clips: Clip[];
+  muted: boolean;        // Audio/visibility disabled
+  locked: boolean;       // Prevent editing
+  visible: boolean;      // Show/hide in UI
+}
+Track order matters:
+
+tracks[0] = bottom layer (rendered first)
+tracks[n] = top layer (rendered last)
+Component 3: Clip
+A time-bound piece of content
+
+typescript
+interface Clip {
+  id: string;
+  trackId: string;
+  type: 'video' | 'audio' | 'image' | 'text';
+  sourceId: string;      // Reference to actual content
+  
+  start: TimeMs;         // When it appears on timeline
+  duration: TimeMs;      // How long it lasts
+  
+  trimStart?: TimeMs;    // Offset into source content
+  trimEnd?: TimeMs;      // End offset into source
+}
+Key distinction:
+
+start = when the clip appears on the TIMELINE
+trimStart = offset into the SOURCE content
+Example: A 10-second video, showing seconds 2-5:
+
+sourceId: "video.mp4" (10 seconds long)
+start: 0ms (appears at timeline start)
+duration: 3000ms (shows for 3 seconds)
+trimStart: 2000ms (starts at 2s into video)
+trimEnd: 5000ms (ends at 5s into video)
+Component 4: Playhead
+Current time position
+
+typescript
+interface PlayheadState {
+  current: TimeMs;       // Primary playhead (playback position)
+  hover?: TimeMs;        // Secondary preview playhead
+}
+Why two playheads?
+
+current = the "real" time (where playback happens)
+hover = preview time (where you're about to click/drop)
+Component 5: Selection & Viewport
+Editing state (separate from timeline content)
+
+typescript
+interface SelectionState {
+  clipIds: Set<string>;
+  trackIds: Set<string>;
+  timeRange?: { start: number; end: number };
+}
+interface ViewportState {
+  zoom: number;          // Pixels per millisecond
+  scrollTime: TimeMs;    // Left edge of visible area
+  viewportWidth: number; // Width in pixels
+}
+Why separate?
+
+Selection is temporary (doesn't save with project)
+Multiple UIs can have different selections/viewports
+Easier undo/redo
+Operations
+Clip Operations
+All operations are pure functions:
+
+typescript
+// Move a clip
+const movedClip = moveClip(clip, timeMs(5000));
+// Resize a clip
+const resizedClip = resizeClip(clip, timeMs(8000));
+// Split a clip into two
+const [left, right] = splitClip(clip, timeMs(3000), generateClipId);
+Timeline Operations
+Higher-level operations that coordinate changes:
+
+typescript
+// Add a clip to the timeline
+timeline = addClip(timeline, clip);
+// Remove a clip
+timeline = removeClip(timeline, clipId);
+// Move a track
+timeline = moveTrack(timeline, fromIndex, toIndex);
+Architecture:
+
+Timeline Operations (high-level)
+  ↓ uses
+Track Operations (mid-level)
+  ↓ uses
+Clip Operations (low-level)
+Advanced Features
+1. Snapping System
+Pure calculation - no side effects:
+
+typescript
+const snapResult = snapTime(timeline, timeMs(5050), playheadTime);
+if (snapResult.snapped) {
+  console.log(`Snapped from ${snapResult.originalTime} to ${snapResult.snappedTime}`);
+  console.log(`Target: ${snapResult.target?.type}`); // 'clip-start', 'marker', etc.
+}
+Snapping is a QUERY, not a mutation:
+
+Input: "I want to place something at time X"
+Output: "The nearest snap point is Y"
+The caller decides whether to use it
+Snap targets:
+
+Clip starts and ends
+Playhead position
+Markers
+Timeline zero
+2. Viewport Calculations
+Convert between time and pixels:
+
+typescript
+const viewport = createViewportState({
+  zoom: 0.1,              // 0.1 pixels/ms = 100 pixels/second
+  scrollTime: timeMs(0),
+  viewportWidth: 1000,
+});
+// Time to pixels
+const pixels = timeToPixels(viewport, timeMs(5000)); // 500px
+// Pixels to time
+const time = pixelsToTime(viewport, 500); // 5000ms
+Zoom explained:
+
+zoom = 0.1 means 1 second (1000ms) = 100 pixels
+zoom = 1.0 means 1 second = 1000 pixels
+Higher zoom = more zoomed IN (more detail)
+3. Time Utilities
+Comprehensive time conversions:
+
+typescript
+msToSeconds(timeMs(5000));              // 5
+secondsToMs(5);                         // 5000ms
+msToFrames(timeMs(1000), 30);           // 30 frames
+msToTimecode(timeMs(3665000), 30);      // "01:01:05:00"
+msToMinutesSeconds(timeMs(125000));     // "2:05"
+File Structure
+packages/core/src/
+├── index.ts                      # Public API exports
+├── types/
+│   ├── common.ts                 # TimeMs, ID, Bounds
+│   ├── timeline.ts               # Timeline type
+│   ├── track.ts                  # Track type
+│   ├── clip.ts                   # Clip type
+│   ├── marker.ts                 # Marker type
+│   ├── playhead.ts               # PlayheadState type
+│   ├── selection.ts              # SelectionState type
+│   └── viewport.ts               # ViewportState type
+├── operations/
+│   ├── clip-operations.ts        # Move, resize, split, trim
+│   ├── track-operations.ts       # Add/remove clips, toggle props
+│   ├── timeline-operations.ts    # High-level coordination
+│   └── selection-operations.ts   # Selection management
+├── calculations/
+│   └── snapping.ts               # Snap calculations
+├── utils/
+│   ├── time.ts                   # Time conversions
+│   ├── id.ts                     # ID generation
+│   └── validation.ts             # Input validation
+└── examples.ts                   # Usage examples
+Usage Examples
+Example 1: Creating a Timeline
+typescript
+import {
+  createTimeline,
+  createTrack,
+  createClip,
+  addTrack,
+  addClip,
+  timeMs,
+  generateTimelineId,
+  generateTrackId,
+  generateClipId,
+} from '@timeline/core';
+// Create timeline
+let timeline = createTimeline({
+  id: generateTimelineId(),
+  name: 'My Project',
+  duration: timeMs(60000), // 60 seconds
+});
+// Create track
+const track = createTrack({
+  id: generateTrackId(),
+  name: 'Video Track 1',
+});
+timeline = addTrack(timeline, track);
+// Create clip
+const clip = createClip({
+  id: generateClipId(),
+  trackId: track.id,
+  type: 'video',
+  sourceId: 'video.mp4',
+  start: timeMs(2000),     // Starts at 2 seconds
+  duration: timeMs(5000),  // Lasts 5 seconds
+});
+timeline = addClip(timeline, clip);
+Example 2: Editing Clips
+typescript
+import { moveClip, resizeClip, splitClip } from '@timeline/core';
+// Move clip to 3 seconds
+let clip = moveClip(clip, timeMs(3000));
+// Resize to 8 seconds
+clip = resizeClip(clip, timeMs(8000));
+// Split at 5 seconds
+const [leftClip, rightClip] = splitClip(clip, timeMs(5000), generateClipId);
+Example 3: Snapping
+typescript
+import { snapClipStart } from '@timeline/core';
+const snapResult = snapClipStart(timeline, clip, timeMs(5050));
+if (snapResult.snapped) {
+  // Use the snapped time
+  clip = moveClip(clip, snapResult.snappedTime);
+}
+Key Concepts Explained
+1. Why Immutable?
+Problem: Mutable state is hard to track
+
+typescript
+// Mutable (bad)
+clip.start = 3000;
+// Who changed it? When? Why? Hard to debug!
+Solution: Immutable updates
+
+typescript
+// Immutable (good)
+const newClip = moveClip(clip, timeMs(3000));
+// Clear what changed, easy to undo, framework-friendly
+2. Why Separate Selection from Timeline?
+Timeline = persistent content (save with project) Selection = temporary editing state (don't save)
+
+This separation means:
+
+Multiple UIs can have different selections
+Selection changes don't trigger project saves
+Easier to implement undo/redo
+3. Why Branded Types (TimeMs)?
+typescript
+type TimeMs = number & { readonly __brand: 'TimeMs' };
+Prevents mixing regular numbers with time:
+
+typescript
+const duration: TimeMs = 5000;  // ❌ Error: not a TimeMs
+const duration = timeMs(5000);  // ✅ Correct
+This catches bugs at compile time!
+
+Build Output
+The library builds to:
+
+CommonJS (dist/index.cjs) - for Node.js
+ESM (dist/index.js) - for modern bundlers
+TypeScript declarations (dist/index.d.ts) - for type checking
+Next Steps
+For Building a UI
+Choose your framework (React, Vue, Svelte, etc.)
+
+Create state management:
+
+typescript
+const [timeline, setTimeline] = useState(createTimeline(...));
+const [selection, setSelection] = useState(createSelectionState());
+const [viewport, setViewport] = useState(createViewportState());
+Render the timeline:
+
+Use 
+timeToPixels()
+ to position clips
+Use 
+getVisibleDuration()
+ to know what to render
+Use viewport state for zoom/scroll
+Handle interactions:
+
+Mouse down → start drag
+Mouse move → calculate new position
+Use 
+snapTime()
+ to find snap points
+Mouse up → 
+setTimeline(moveClip(...))
+Example React component structure:
+
+<TimelineContainer>
+  <TimeRuler viewport={viewport} />
+  <TracksContainer>
+    {timeline.tracks.map(track => (
+      <Track key={track.id}>
+        {track.clips.map(clip => (
+          <Clip
+            key={clip.id}
+            clip={clip}
+            viewport={viewport}
+            onMove={(newStart) => {
+              const snapped = snapTime(timeline, newStart);
+              setTimeline(updateClip(timeline, moveClip(clip, snapped.snappedTime)));
+            }}
+          />
+        ))}
+      </Track>
+    ))}
+  </TracksContainer>
+</TimelineContainer>
+For Testing
+Run the examples:
+
+typescript
+import { runAllExamples } from '@timeline/core/examples';
+runAllExamples();
+Design Principles Summary
+Pure functions over classes - Easier to test and reason about
+Immutable state - Predictable updates, easy undo/redo
+No rendering logic - Core is 100% framework-agnostic
+Explicit over implicit - Clear function names, no magic
+Simple over clever - Readable code beats optimized code
+Types as documentation - TypeScript types explain intent
+What Makes This "Professional"?
+Type Safety: Full TypeScript with strict mode
+Immutability: Predictable state management
+Separation of Concerns: Core logic separate from UI
+Extensibility: Easy to add new clip types, operations
+Documentation: Every component explained with rationale
+Real-World Patterns: Based on actual video editor architecture
+Learning Takeaways
+For beginners:
+
+How to structure a library (types → operations → API)
+Why immutability matters
+How to separate logic from presentation
+TypeScript best practices
+For intermediate developers:
+
+Advanced TypeScript (branded types, strict optional properties)
+Pure functional patterns
+State management architecture
+Building framework-agnostic libraries
+For advanced developers:
+
+Reference implementation for timeline editors
+Patterns for complex state management
+How to design extensible APIs
+Conclusion
+You now have a production-ready timeline core that can power any timeline-based application. The core handles all the complex logic (time calculations, snapping, state management) so you can focus on building a great UI.
+
+The core is the engine. Now go build the car! 🚗

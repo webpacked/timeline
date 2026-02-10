@@ -1,0 +1,410 @@
+Phase 2: React Adapter + Minimal Timeline UI - Walkthrough
+What We Built
+Phase 2 successfully adapts the framework-agnostic @timeline/core to React and creates a minimal validation UI.
+
+Critical Achievement: The core library remains 100% untouched. All React integration happens in separate packages.
+
+Part 1: React Adapter (@timeline/react-adapter)
+Package Structure
+packages/react-adapter/
+├── package.json          # React peer dependency, core workspace dependency
+├── tsconfig.json         # Extends root config, enables JSX
+└── src/
+    ├── index.ts          # Public exports
+    ├── useTimeline.ts    # Timeline state management
+    ├── useViewport.ts    # Zoom/scroll state management
+    ├── useSelection.ts   # Selection state management
+    └── usePlayhead.ts    # Playhead position management
+Hook 1: 
+useTimeline
+Purpose: Wraps timeline state in React and provides action functions.
+
+Key Features:
+
+Holds 
+Timeline
+ state using useState
+All mutations call core functions
+Returns new state immutably
+Zero rendering logic
+API:
+
+typescript
+const {
+  timeline,
+  addTrack,
+  removeTrack,
+  updateTrack,
+  addClip,
+  removeClip,
+  updateClip,
+  // ... more operations
+} = useTimeline(initialTimeline);
+Implementation Pattern:
+
+typescript
+const addClip = useCallback((clip: Clip) => {
+  setTimeline(current => coreAddClip(current, clip));
+}, []);
+Every action:
+
+Calls core function with current state
+Core returns new immutable state
+setState triggers React re-render
+Hook 2: 
+useViewport
+Purpose: Manages viewport state for time-to-pixel conversions.
+
+Key Features:
+
+Zoom level (pixels per millisecond)
+Scroll position (left edge time)
+Viewport width (pixels)
+Conversion utilities
+API:
+
+typescript
+const {
+  viewport,
+  setZoom,
+  setScroll,
+  timeToPixels,
+  pixelsToTime,
+  visibleDuration,
+} = useViewport({ zoom: 0.1, scrollTime: 0, viewportWidth: 1200 });
+Mental Model: The viewport is a "camera" looking at the timeline.
+
+Hook 3: 
+useSelection
+Purpose: Manages which clips/tracks are selected.
+
+Key Features:
+
+Separate from timeline content (temporary editing state)
+Supports multi-select
+Provides helper functions
+API:
+
+typescript
+const {
+  selection,
+  selectClip,
+  deselectClip,
+  addClipToSelection,
+  isClipSelected,
+  clearSelection,
+} = useSelection();
+Hook 4: 
+usePlayhead
+Purpose: Manages playhead position.
+
+Key Features:
+
+Current time (primary playhead)
+Hover time (preview playhead)
+Simple setters
+API:
+
+typescript
+const {
+  playhead,
+  setPlayheadTime,
+  setHoverTime,
+  clearHover,
+} = usePlayhead(0);
+Part 2: Minimal Timeline UI (apps/playground)
+Package Structure
+apps/playground/
+├── package.json          # Vite, React, adapter dependencies
+├── vite.config.ts        # Vite configuration
+├── tsconfig.json         # TypeScript config with DOM libs
+├── index.html            # Entry HTML
+└── src/
+    ├── main.tsx          # React entry point
+    ├── App.tsx           # Creates sample timeline
+    ├── TimelineEditor.tsx    # Main orchestrator
+    ├── TrackLane.tsx         # Track renderer
+    ├── ClipView.tsx          # Clip renderer
+    ├── PlayheadView.tsx      # Playhead line
+    └── TimeRuler.tsx         # Time markers
+Component 1: ClipView
+Purpose: Renders a single clip as a positioned block.
+
+What it does:
+
+Calculates position using timeToPixels(viewport, clip.start)
+Calculates width using timeToPixels(viewport, clip.duration)
+Shows clip type and duration
+Handles click for selection
+Styling: Intentionally minimal - inline styles, basic colors.
+
+typescript
+const left = timeToPixels(viewport, clip.start);
+const width = timeToPixels(viewport, clip.duration);
+<div style={{
+  position: 'absolute',
+  left: `${left}px`,
+  width: `${width}px`,
+  background: isSelected ? '#4a9eff' : '#888',
+  // ... more inline styles
+}}>
+  {clip.type} - {msToSeconds(clip.duration)}s
+</div>
+Component 2: TrackLane
+Purpose: Horizontal container for clips.
+
+What it does:
+
+Renders track metadata (name, muted/locked status)
+Maps over clips and renders ClipView for each
+Passes viewport and selection to children
+Data Flow:
+
+Timeline state → TrackLane props → ClipView props
+Component 3: PlayheadView
+Purpose: Vertical line showing current time.
+
+What it does:
+
+Calculates position: timeToPixels(viewport, playhead.current)
+Renders red line at that position
+Updates reactively when playhead moves
+Styling: Absolute positioning, pointer-events: none to not block clicks.
+
+Component 4: TimeRuler
+Purpose: Shows time markers along the top.
+
+What it does:
+
+Calculates visible time range from viewport
+Generates markers every second
+Positions each marker using timeToPixels
+Component 5: TimelineEditor
+Purpose: Main orchestrator that connects everything.
+
+What it does:
+
+Initializes all hooks
+Renders child components
+Handles user interactions
+Coordinates state flow
+Data Flow Pattern (CRITICAL):
+
+User clicks clip →
+onClick handler →
+selection.selectClip(clipId) →
+Core function returns new SelectionState →
+React setState updates →
+React re-renders →
+ClipView receives isSelected=true →
+Clip shows selected color
+Key Code:
+
+typescript
+const timeline = useTimeline(initialTimeline);
+const viewport = useViewport({ zoom: 0.1, ... });
+const selection = useSelection();
+const playhead = usePlayhead(0);
+const handleClipClick = (clipId: string) => {
+  selection.selectClip(clipId);  // ← Calls core, triggers re-render
+};
+return (
+  <div>
+    <TimeRuler viewport={viewport.viewport} duration={timeline.timeline.duration} />
+    <PlayheadView playhead={playhead.playhead} viewport={viewport.viewport} />
+    {timeline.timeline.tracks.map(track => (
+      <TrackLane
+        track={track}
+        viewport={viewport.viewport}
+        selection={selection.selection}
+        onClipClick={handleClipClick}
+      />
+    ))}
+  </div>
+);
+Component 6: App
+Purpose: Creates sample timeline data.
+
+What it does:
+
+Uses core factory functions to create timeline
+Creates 2 tracks with 3 clips total
+Passes to TimelineEditor
+Verification Results
+✅ Playground Running Successfully
+Timeline Playground
+Review
+Timeline Playground
+
+What the screenshot shows:
+
+Header: Timeline name, duration (60000ms), zoom level (0.1), selected clips (0)
+Time Ruler: Markers at 0s, 1s, 2s, 3s, etc.
+Video Track 1: Two clips visible
+First clip: starts at ~1s, duration 5s
+Second clip: starts at ~7s, duration 3s
+Audio Track 1: One clip visible
+Starts at ~2s, duration 8s
+Playhead: Red vertical line at time 0
+Footer: Instructions for interaction
+✅ Data Flow Validated
+Test 1: Timeline Renders
+
+Core timeline data → React state → UI components
+All clips positioned correctly using viewport calculations
+Time ruler shows correct markers
+Test 2: State is Immutable
+
+All hooks use useState with core functions
+No mutations of original objects
+Each operation returns new state
+Test 3: Core Remains Untouched
+
+Zero modifications to @timeline/core
+All React logic in separate packages
+Core is still framework-agnostic
+Key Achievements
+1. Clean Separation of Concerns
+┌─────────────────────────────────────┐
+│   UI Components (React)             │  ← Phase 2
+│   - Rendering                       │
+│   - Event handling                  │
+└─────────────────────────────────────┘
+              ↓ uses
+┌─────────────────────────────────────┐
+│   React Adapter (Hooks)             │  ← Phase 2
+│   - State management                │
+│   - Action functions                │
+└─────────────────────────────────────┘
+              ↓ calls
+┌─────────────────────────────────────┐
+│   @timeline/core (UNCHANGED)        │  ← Phase 1
+│   - Pure functions                  │
+│   - Immutable operations            │
+└─────────────────────────────────────┘
+2. Correct Data Flow
+Every user interaction follows this pattern:
+
+User action (click, keyboard)
+Event handler in component
+Call hook action function
+Hook calls core function
+Core returns new state
+React setState triggers re-render
+UI updates
+No shortcuts. No mutations. No direct state changes.
+
+3. Intentionally Minimal UI
+The UI is purposefully ugly because:
+
+This is validation, not production
+Focus is on correctness, not beauty
+Proves the architecture works
+Easy to understand and reason about
+Technical Details
+TypeScript Strict Mode Challenges
+Challenge: exactOptionalPropertyTypes requires careful handling of optional properties.
+
+Solution: Conditionally assign optional properties instead of setting to undefined:
+
+typescript
+// ❌ Bad (fails strict mode)
+const playhead: PlayheadState = {
+  current: time,
+  hover: undefined,  // Error!
+};
+// ✅ Good (passes strict mode)
+const playhead: PlayheadState = {
+  current: time,
+};
+if (hoverTime !== undefined) {
+  playhead.hover = hoverTime;
+}
+Workspace Configuration
+Challenge: Playground app not recognized by pnpm workspace.
+
+Solution: Updated pnpm-workspace.yaml:
+
+yaml
+packages:
+  - 'packages/*'
+  - 'apps/*'      # ← Added this
+  - 'docs'
+File Count Summary
+React Adapter:
+
+5 files (4 hooks + index)
+~500 lines of code
+Zero dependencies beyond React and core
+Playground UI:
+
+7 files (6 components + entry)
+~400 lines of code
+Intentionally simple
+Total: 12 new files, ~900 lines of code
+
+What Works
+✅ Timeline renders correctly
+✅ Clips positioned using viewport
+✅ Time ruler shows markers
+✅ Playhead visible
+✅ Click selection works
+✅ Keyboard shortcuts work (Space, Esc)
+✅ State updates immutably
+✅ Core remains untouched
+✅ Data flow is correct
+
+What Doesn't Work (Intentionally)
+❌ Drag and drop (not implemented)
+❌ Clip resizing (not implemented)
+❌ Beautiful UI (intentionally minimal)
+❌ Advanced interactions (keeping it simple)
+❌ Persistence (not needed for validation)
+
+These are intentionally omitted because Phase 2 is about validation, not features.
+
+Next Steps (Future Phases)
+Phase 3: Enhanced UI
+
+Drag and drop for clips
+Resize handles
+Better styling
+Zoom controls
+Scroll controls
+Phase 4: Advanced Features
+
+Undo/redo
+Keyboard shortcuts
+Context menus
+Clip trimming UI
+Multi-track selection
+Phase 5: Production Polish
+
+Performance optimization
+Accessibility
+Touch support
+Responsive design
+Conclusion
+Phase 2 is a complete success:
+
+✅ Core untouched - Zero modifications to @timeline/core
+✅ Adapter works - React hooks correctly wrap core functions
+✅ UI validates - Minimal components prove the architecture
+✅ Data flow correct - Immutable updates flow from core to UI
+✅ Code is clear - Easy to understand and reason about
+The architecture is validated. The foundation is solid. Ready to build on top of this.
+
+Running the Playground
+bash
+# From project root
+pnpm install
+# Start dev server
+cd apps/playground
+pnpm dev
+# Open browser to http://localhost:3000
+Interactions:
+
+Click clips to select them
+Press Space to advance playhead
+Press Esc to clear selection
+Remember: This is intentionally minimal. The goal is validation, not beauty.
