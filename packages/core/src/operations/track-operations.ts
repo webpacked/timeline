@@ -1,124 +1,182 @@
-import type { ID } from '../types/common';
-import type { Track } from '../types/track';
-import type { Clip } from '../types/clip';
-import { sortClipsByTime } from './clip-operations';
-
 /**
- * Track Operations
+ * TRACK OPERATIONS
  * 
- * These are pure functions for manipulating tracks.
- * Like clip operations, they follow the immutable pattern.
+ * Pure functions for manipulating tracks in the timeline state.
  * 
- * KEY CONCEPT: TRACK ORDER MATTERS
- * Tracks are rendered bottom-to-top:
- * - tracks[0] = bottom layer (rendered first)
- * - tracks[n] = top layer (rendered last, appears on top)
+ * WHAT ARE TRACK OPERATIONS?
+ * - Add/remove tracks
+ * - Reorder tracks
+ * - Update track properties (name, mute, lock)
+ * 
+ * ALL OPERATIONS ARE PURE:
+ * - Take state as input
+ * - Return new state as output
+ * - Never mutate input state
+ * 
+ * USAGE:
+ * ```typescript
+ * let state = addTrack(state, track);
+ * state = moveTrack(state, 'track_1', 2);
+ * state = updateTrack(state, 'track_1', { muted: true });
+ * state = removeTrack(state, 'track_1');
+ * ```
  */
 
+import { TimelineState } from '../types/state';
+import { Track } from '../types/track';
+import { findTrackIndex } from '../systems/queries';
+
 /**
- * Add a clip to a track
- * Returns a new track with the clip added
+ * Add a track to the timeline
+ * 
+ * Adds the track to the end of the tracks array (top layer).
+ * 
+ * @param state - Current timeline state
+ * @param track - Track to add
+ * @returns New timeline state with track added
  */
-export const addClipToTrack = (track: Track, clip: Clip): Track => {
-  // Ensure the clip belongs to this track
-  if (clip.trackId !== track.id) {
-    throw new Error(`Clip trackId (${clip.trackId}) does not match track id (${track.id})`);
+export function addTrack(state: TimelineState, track: Track): TimelineState {
+  return {
+    ...state,
+    timeline: {
+      ...state.timeline,
+      tracks: [...state.timeline.tracks, track],
+    },
+  };
+}
+
+/**
+ * Remove a track from the timeline
+ * 
+ * WARNING: This also removes all clips on the track.
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track to remove
+ * @returns New timeline state with track removed
+ */
+export function removeTrack(state: TimelineState, trackId: string): TimelineState {
+  return {
+    ...state,
+    timeline: {
+      ...state.timeline,
+      tracks: state.timeline.tracks.filter(t => t.id !== trackId),
+    },
+  };
+}
+
+/**
+ * Move a track to a new position
+ * 
+ * Changes the track order (bottom-to-top rendering).
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track to move
+ * @param newIndex - New index position (0 = bottom)
+ * @returns New timeline state with track moved
+ */
+export function moveTrack(
+  state: TimelineState,
+  trackId: string,
+  newIndex: number
+): TimelineState {
+  const currentIndex = findTrackIndex(state, trackId);
+  if (currentIndex === -1) {
+    return state;
   }
   
-  const newClips = [...track.clips, clip];
+  const newTracks = [...state.timeline.tracks];
+  const [track] = newTracks.splice(currentIndex, 1);
+  if (!track) {
+    return state;
+  }
+  newTracks.splice(newIndex, 0, track);
   
   return {
-    ...track,
-    clips: sortClipsByTime(newClips),
+    ...state,
+    timeline: {
+      ...state.timeline,
+      tracks: newTracks,
+    },
   };
-};
+}
 
 /**
- * Remove a clip from a track by ID
+ * Update track properties
+ * 
+ * Generic function to update any track properties.
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track to update
+ * @param updates - Partial track properties to update
+ * @returns New timeline state with track updated
  */
-export const removeClipFromTrack = (track: Track, clipId: ID): Track => {
+export function updateTrack(
+  state: TimelineState,
+  trackId: string,
+  updates: Partial<Track>
+): TimelineState {
+  const trackIndex = findTrackIndex(state, trackId);
+  if (trackIndex === -1) {
+    return state;
+  }
+  
+  const newTracks = [...state.timeline.tracks];
+  const existingTrack = newTracks[trackIndex];
+  if (!existingTrack) {
+    return state;
+  }
+  newTracks[trackIndex] = {
+    ...existingTrack,
+    ...updates,
+  } as Track;
+  
   return {
-    ...track,
-    clips: track.clips.filter(c => c.id !== clipId),
+    ...state,
+    timeline: {
+      ...state.timeline,
+      tracks: newTracks,
+    },
   };
-};
-
-/**
- * Update a clip in a track
- * Finds the clip by ID and replaces it with the new version
- */
-export const updateClipInTrack = (track: Track, updatedClip: Clip): Track => {
-  return {
-    ...track,
-    clips: sortClipsByTime(
-      track.clips.map(c => c.id === updatedClip.id ? updatedClip : c)
-    ),
-  };
-};
-
-/**
- * Get a clip from a track by ID
- */
-export const getClipFromTrack = (track: Track, clipId: ID): Clip | undefined => {
-  return track.clips.find(c => c.id === clipId);
-};
+}
 
 /**
  * Toggle track mute
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track
+ * @returns New timeline state with track mute toggled
  */
-export const toggleTrackMute = (track: Track): Track => {
-  return {
-    ...track,
-    muted: !track.muted,
-  };
-};
+export function toggleTrackMute(state: TimelineState, trackId: string): TimelineState {
+  const trackIndex = findTrackIndex(state, trackId);
+  if (trackIndex === -1) {
+    return state;
+  }
+  
+  const track = state.timeline.tracks[trackIndex];
+  if (!track) {
+    return state;
+  }
+  
+  return updateTrack(state, trackId, { muted: !track.muted });
+}
 
 /**
  * Toggle track lock
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track
+ * @returns New timeline state with track lock toggled
  */
-export const toggleTrackLock = (track: Track): Track => {
-  return {
-    ...track,
-    locked: !track.locked,
-  };
-};
-
-/**
- * Toggle track visibility
- */
-export const toggleTrackVisibility = (track: Track): Track => {
-  return {
-    ...track,
-    visible: !track.visible,
-  };
-};
-
-/**
- * Set track height
- */
-export const setTrackHeight = (track: Track, height: number): Track => {
-  return {
-    ...track,
-    height,
-  };
-};
-
-/**
- * Rename a track
- */
-export const renameTrack = (track: Track, name: string): Track => {
-  return {
-    ...track,
-    name,
-  };
-};
-
-/**
- * Clear all clips from a track
- */
-export const clearTrack = (track: Track): Track => {
-  return {
-    ...track,
-    clips: [],
-  };
-};
+export function toggleTrackLock(state: TimelineState, trackId: string): TimelineState {
+  const trackIndex = findTrackIndex(state, trackId);
+  if (trackIndex === -1) {
+    return state;
+  }
+  
+  const track = state.timeline.tracks[trackIndex];
+  if (!track) {
+    return state;
+  }
+  
+  return updateTrack(state, trackId, { locked: !track.locked });
+}

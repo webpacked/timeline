@@ -1,57 +1,57 @@
-import type { TimeMs, ID } from './common';
-import type { Track } from './track';
-import type { Marker } from './marker';
+/**
+ * TIMELINE MODEL
+ * 
+ * The Timeline is the root container for the entire editing project.
+ * 
+ * WHAT IS A TIMELINE?
+ * - The top-level data structure for a project
+ * - Contains all tracks (which contain all clips)
+ * - Defines the frame rate (FPS) for the entire project
+ * - Defines the total duration of the project
+ * 
+ * WHY A TIMELINE?
+ * - Single source of truth for all timeline data
+ * - Defines the temporal bounds of the project
+ * - Provides a consistent frame rate for all time calculations
+ * 
+ * EXAMPLE:
+ * ```typescript
+ * const timeline: Timeline = {
+ *   id: 'timeline_1',
+ *   name: 'My Project',
+ *   fps: frameRate(30),
+ *   duration: frame(9000),  // 5 minutes at 30fps
+ *   tracks: [],
+ * };
+ * ```
+ * 
+ * INVARIANTS:
+ * - FPS is immutable after timeline creation
+ * - Duration must be positive
+ * - All tracks must have unique IDs
+ */
+
+import { Frame, FrameRate } from './frame';
+import { Track } from './track';
 
 /**
- * Timeline - The root container for the entire timeline project
- * 
- * WHAT IS IT?
- * The timeline is the top-level data structure that represents your entire project.
- * Think of it like a Premiere Pro project or a Logic Pro session.
- * 
- * WHY IT EXISTS:
- * - Single source of truth for all timeline data
- * - Defines the bounds and structure of the project
- * - Contains all tracks, markers, and global state
- * 
- * WHAT IT DOESN'T CONTAIN:
- * - Rendering information (that's the UI's job)
- * - UI state like selection or viewport (those are separate)
- * - Event handlers or interaction logic
- * 
- * KEY CONCEPT: SEPARATION OF CONCERNS
- * The Timeline contains CONTENT (tracks, clips, markers)
- * Separate state objects handle EDITING (selection, viewport, playhead)
- * This separation makes the code easier to understand and test
+ * Timeline - The root container for a timeline project
  */
 export interface Timeline {
   /** Unique identifier */
-  id: ID;
+  id: string;
   
   /** Human-readable name */
   name: string;
   
-  /** 
-   * Total duration of the timeline in milliseconds
-   * This defines the "end" of the timeline
-   * Clips can exist beyond this, but this is the logical end point
-   */
-  duration: TimeMs;
+  /** Frames per second (immutable after creation) */
+  fps: FrameRate;
   
-  /** 
-   * Tracks (layers) in the timeline
-   * Ordered from bottom to top:
-   * - tracks[0] = bottom layer
-   * - tracks[n] = top layer
-   */
+  /** Total duration of the timeline in frames */
+  duration: Frame;
+  
+  /** Tracks in the timeline (ordered bottom-to-top) */
   tracks: Track[];
-  
-  /** 
-   * Global markers
-   * These are timeline-level markers (like chapter points)
-   * Individual clips can also have their own markers
-   */
-  markers: Marker[];
   
   /** Optional metadata for custom use cases */
   metadata?: Record<string, unknown>;
@@ -59,22 +59,24 @@ export interface Timeline {
 
 /**
  * Create a new timeline
- * Factory function with sensible defaults
+ * 
+ * @param params - Timeline parameters
+ * @returns A new Timeline object
  */
-export const createTimeline = (params: {
-  id: ID;
+export function createTimeline(params: {
+  id: string;
   name: string;
-  duration: TimeMs;
+  fps: FrameRate;
+  duration: Frame;
   tracks?: Track[];
-  markers?: Marker[];
   metadata?: Record<string, unknown>;
-}): Timeline => {
+}): Timeline {
   const timeline: Timeline = {
     id: params.id,
     name: params.name,
+    fps: params.fps,
     duration: params.duration,
     tracks: params.tracks ?? [],
-    markers: params.markers ?? [],
   };
   
   if (params.metadata !== undefined) {
@@ -82,4 +84,4 @@ export const createTimeline = (params: {
   }
   
   return timeline;
-};
+}

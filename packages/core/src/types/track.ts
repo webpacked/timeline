@@ -1,69 +1,70 @@
-import type { ID } from './common';
-import type { Clip } from './clip';
+/**
+ * TRACK MODEL
+ * 
+ * A Track is a horizontal container for Clips.
+ * 
+ * WHAT IS A TRACK?
+ * - A layer that holds clips (like a layer in Photoshop)
+ * - Provides organization and isolation for clips
+ * - Has a type (video or audio) that clips must match
+ * 
+ * WHY TRACKS?
+ * - Organize clips into layers
+ * - Enable stacking and compositing (track order matters)
+ * - Provide track-level controls (mute, lock)
+ * - Isolate editing operations
+ * 
+ * TRACK ORDER:
+ * Tracks are rendered bottom-to-top:
+ * - tracks[0] = bottom layer (rendered first)
+ * - tracks[n] = top layer (rendered last, appears on top)
+ * 
+ * EXAMPLE:
+ * ```typescript
+ * const track: Track = {
+ *   id: 'track_1',
+ *   name: 'Video Track 1',
+ *   type: 'video',
+ *   clips: [],
+ *   locked: false,
+ *   muted: false,
+ * };
+ * ```
+ * 
+ * INVARIANTS:
+ * - Clips on a track must not overlap
+ * - All clips must match the track type
+ * - Clips array should be sorted by timelineStart (for performance)
+ */
+
+import { Clip } from './clip';
 
 /**
- * Track - A horizontal lane that holds clips
- * 
- * WHAT IS IT?
- * A track is like a layer in Photoshop or a track in a DAW (Digital Audio Workstation).
- * It's a container for clips that provides organization and isolation.
- * 
- * WHY IT EXISTS:
- * - Organizes clips into layers (video tracks, audio tracks, etc.)
- * - Enables stacking and compositing (track order matters!)
- * - Provides isolation for editing operations
- * - Allows track-level properties (mute, lock, visibility)
- * 
- * KEY CONCEPT: TRACK ORDER
- * Tracks are rendered bottom-to-top (like layers in design tools)
- * - Track[0] = bottom layer (rendered first)
- * - Track[n] = top layer (rendered last, appears on top)
- * 
- * WHAT IT DOESN'T CONTAIN:
- * - Rendering logic (that's the UI's job)
- * - Pixel positions (those are calculated)
+ * TrackType - The kind of content this track holds
+ */
+export type TrackType = 'video' | 'audio';
+
+/**
+ * Track - A container for clips
  */
 export interface Track {
   /** Unique identifier */
-  id: ID;
+  id: string;
   
   /** Human-readable name */
   name: string;
   
-  /** Clips on this track, in temporal order */
+  /** Type of content this track holds */
+  type: TrackType;
+  
+  /** Clips on this track (should be sorted by timelineStart) */
   clips: Clip[];
   
-  // ===== TRACK PROPERTIES =====
-  
-  /** 
-   * Muted - Audio/visibility disabled
-   * For video tracks: hides the track
-   * For audio tracks: silences the track
-   */
-  muted: boolean;
-  
-  /** 
-   * Locked - Prevents editing
-   * When locked, clips cannot be added, moved, or deleted
-   */
+  /** Whether the track is locked (prevents editing) */
   locked: boolean;
   
-  /** 
-   * Visible - Show/hide in UI
-   * This is different from muted:
-   * - muted = affects playback/output
-   * - visible = affects UI display only
-   */
-  visible: boolean;
-  
-  // ===== UI HINTS =====
-  
-  /** 
-   * Preferred height in pixels
-   * This is a UI hint, not rendering logic
-   * Stored here so it persists across sessions
-   */
-  height?: number;
+  /** Whether the track is muted (affects playback) */
+  muted: boolean;
   
   /** Optional metadata for custom use cases */
   metadata?: Record<string, unknown>;
@@ -71,34 +72,47 @@ export interface Track {
 
 /**
  * Create a new track
- * Factory function with sensible defaults
+ * 
+ * @param params - Track parameters
+ * @returns A new Track object
  */
-export const createTrack = (params: {
-  id: ID;
+export function createTrack(params: {
+  id: string;
   name: string;
+  type: TrackType;
   clips?: Clip[];
-  muted?: boolean;
   locked?: boolean;
-  visible?: boolean;
-  height?: number;
+  muted?: boolean;
   metadata?: Record<string, unknown>;
-}): Track => {
+}): Track {
   const track: Track = {
     id: params.id,
     name: params.name,
+    type: params.type,
     clips: params.clips ?? [],
-    muted: params.muted ?? false,
     locked: params.locked ?? false,
-    visible: params.visible ?? true,
+    muted: params.muted ?? false,
   };
-  
-  if (params.height !== undefined) {
-    track.height = params.height;
-  }
   
   if (params.metadata !== undefined) {
     track.metadata = params.metadata;
   }
   
   return track;
-};
+}
+
+/**
+ * Sort clips on a track by timeline start frame
+ * 
+ * This is useful for maintaining clip order and improving
+ * query performance.
+ * 
+ * @param track - The track to sort
+ * @returns A new track with sorted clips
+ */
+export function sortTrackClips(track: Track): Track {
+  return {
+    ...track,
+    clips: [...track.clips].sort((a, b) => a.timelineStart - b.timelineStart),
+  };
+}
