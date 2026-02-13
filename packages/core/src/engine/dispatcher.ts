@@ -75,8 +75,23 @@ export function dispatch(history: HistoryState, operation: Operation): DispatchR
   // Get current state
   const currentState = getCurrentState(history);
   
-  // Execute operation
-  const newState = operation(currentState);
+  let newState: TimelineState;
+  
+  try {
+    // Execute operation
+    newState = operation(currentState);
+  } catch (error) {
+    // Operation threw an error, convert to validation error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      history, // Return unchanged history
+      errors: [{
+        code: 'OPERATION_ERROR',
+        message: errorMessage,
+      }],
+    };
+  }
   
   // Validate resulting state
   const validationResult = validateTimeline(newState);

@@ -45,11 +45,14 @@ import { Clip } from '../types/clip';
 import { Track } from '../types/track';
 import { Asset } from '../types/asset';
 import { Frame } from '../types/frame';
+import { TimelineMarker, ClipMarker, RegionMarker, WorkArea } from '../types/marker';
 import { HistoryState, createHistory, undo as undoHistory, redo as redoHistory, canUndo as canUndoHistory, canRedo as canRedoHistory, getCurrentState } from './history';
 import { dispatch, DispatchResult } from './dispatcher';
 import * as ClipOps from '../operations/clip-operations';
 import * as TrackOps from '../operations/track-operations';
 import * as TimelineOps from '../operations/timeline-operations';
+import * as RippleOps from '../operations/ripple';
+import * as MarkerOps from '../operations/marker-operations';
 import * as AssetRegistry from '../systems/asset-registry';
 import * as Queries from '../systems/queries';
 
@@ -61,6 +64,7 @@ import * as Queries from '../systems/queries';
  */
 export class TimelineEngine {
   private history: HistoryState;
+  private listeners: Set<(state: TimelineState) => void> = new Set();
   
   /**
    * Create a new timeline engine
@@ -70,6 +74,46 @@ export class TimelineEngine {
    */
   constructor(initialState: TimelineState, historyLimit: number = 50) {
     this.history = createHistory(initialState, historyLimit);
+  }
+  
+  // ===== SUBSCRIPTION =====
+  
+  /**
+   * Subscribe to state changes
+   * 
+   * The listener will be called whenever the timeline state changes,
+   * with the new state passed as an argument.
+   * This is used by framework adapters (e.g., React) to trigger re-renders.
+   * 
+   * @param listener - Function to call on state changes, receives new state
+   * @returns Unsubscribe function
+   * 
+   * @example
+   * ```typescript
+   * const unsubscribe = engine.subscribe((state) => {
+   *   console.log('State changed:', state);
+   * });
+   * 
+   * // Later...
+   * unsubscribe();
+   * ```
+   */
+  subscribe(listener: (state: TimelineState) => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+  
+  /**
+   * Notify all subscribers of a state change
+   * 
+   * This is called internally after any operation that modifies state.
+   * Framework adapters use this to trigger re-renders.
+   */
+  private notify(): void {
+    const state = this.getState();
+    this.listeners.forEach(listener => listener(state));
   }
   
   // ===== STATE ACCESS =====
@@ -97,6 +141,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -126,6 +171,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -142,6 +188,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -159,6 +206,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -177,6 +225,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -195,6 +244,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -212,6 +262,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -230,6 +281,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -246,6 +298,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -263,6 +316,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -279,6 +333,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -295,6 +350,42 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Toggle track solo
+   * 
+   * @param trackId - ID of the track
+   * @returns Dispatch result
+   */
+  toggleTrackSolo(trackId: string): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      TrackOps.toggleTrackSolo(state, trackId)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Set track height
+   * 
+   * @param trackId - ID of the track
+   * @param height - New height in pixels
+   * @returns Dispatch result
+   */
+  setTrackHeight(trackId: string, height: number): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      TrackOps.setTrackHeight(state, trackId, height)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -313,6 +404,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -329,6 +421,7 @@ export class TimelineEngine {
     );
     if (result.success) {
       this.history = result.history;
+      this.notify();
     }
     return result;
   }
@@ -345,6 +438,7 @@ export class TimelineEngine {
       return false;
     }
     this.history = undoHistory(this.history);
+    this.notify();
     return true;
   }
   
@@ -358,6 +452,7 @@ export class TimelineEngine {
       return false;
     }
     this.history = redoHistory(this.history);
+    this.notify();
     return true;
   }
   
@@ -448,5 +543,209 @@ export class TimelineEngine {
    */
   getAllTracks(): Track[] {
     return Queries.getAllTracks(this.getState());
+  }
+  
+  // ===== RIPPLE OPERATIONS =====
+  
+  /**
+   * Ripple delete - delete clip and shift subsequent clips left
+   * 
+   * @param clipId - ID of the clip to delete
+   * @returns Dispatch result
+   */
+  rippleDelete(clipId: string): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      RippleOps.rippleDelete(state, clipId)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Ripple trim - trim clip end and shift subsequent clips
+   * 
+   * @param clipId - ID of the clip to trim
+   * @param newEnd - New end frame for the clip
+   * @returns Dispatch result
+   */
+  rippleTrim(clipId: string, newEnd: Frame): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      RippleOps.rippleTrim(state, clipId, newEnd)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Insert edit - insert clip and shift subsequent clips right
+   * 
+   * @param trackId - ID of the track to insert into
+   * @param clip - Clip to insert
+   * @param atFrame - Frame to insert at
+   * @returns Dispatch result
+   */
+  insertEdit(trackId: string, clip: Clip, atFrame: Frame): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      RippleOps.insertEdit(state, trackId, clip, atFrame)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  // ===== MARKER OPERATIONS =====
+  
+  /**
+   * Add a timeline marker
+   * 
+   * @param marker - Timeline marker to add
+   * @returns Dispatch result
+   */
+  addTimelineMarker(marker: TimelineMarker): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.addTimelineMarker(state, marker)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Add a clip marker
+   * 
+   * @param marker - Clip marker to add
+   * @returns Dispatch result
+   */
+  addClipMarker(marker: ClipMarker): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.addClipMarker(state, marker)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Add a region marker
+   * 
+   * @param marker - Region marker to add
+   * @returns Dispatch result
+   */
+  addRegionMarker(marker: RegionMarker): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.addRegionMarker(state, marker)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Remove a marker by ID
+   * 
+   * @param markerId - ID of the marker to remove
+   * @returns Dispatch result
+   */
+  removeMarker(markerId: string): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.removeMarker(state, markerId)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Update a timeline marker
+   * 
+   * @param markerId - ID of the marker to update
+   * @param updates - Partial marker updates
+   * @returns Dispatch result
+   */
+  updateTimelineMarker(
+    markerId: string,
+    updates: Partial<Omit<TimelineMarker, 'id' | 'type'>>
+  ): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.updateTimelineMarker(state, markerId, updates)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Update a region marker
+   * 
+   * @param markerId - ID of the marker to update
+   * @param updates - Partial marker updates
+   * @returns Dispatch result
+   */
+  updateRegionMarker(
+    markerId: string,
+    updates: Partial<Omit<RegionMarker, 'id' | 'type'>>
+  ): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.updateRegionMarker(state, markerId, updates)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  // ===== WORK AREA OPERATIONS =====
+  
+  /**
+   * Set work area
+   * 
+   * @param start - Start frame
+   * @param end - End frame
+   * @returns Dispatch result
+   */
+  setWorkArea(start: Frame, end: Frame): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.setWorkArea(state, { startFrame: start, endFrame: end })
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
+  }
+  
+  /**
+   * Clear work area
+   * 
+   * @returns Dispatch result
+   */
+  clearWorkArea(): DispatchResult {
+    const result = dispatch(this.history, (state) =>
+      MarkerOps.clearWorkArea(state)
+    );
+    if (result.success) {
+      this.history = result.history;
+      this.notify();
+    }
+    return result;
   }
 }

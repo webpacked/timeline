@@ -180,3 +180,36 @@ export function toggleTrackLock(state: TimelineState, trackId: string): Timeline
   
   return updateTrack(state, trackId, { locked: !track.locked });
 }
+
+/**
+ * Toggle track solo
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track
+ * @returns New timeline state with track solo toggled
+ */
+export function toggleTrackSolo(state: TimelineState, trackId: string): TimelineState {
+  const trackIndex = findTrackIndex(state, trackId);
+  if (trackIndex === -1) {
+    return state;
+  }
+  
+  const track = state.timeline.tracks[trackIndex];
+  if (!track) {
+    return state;
+  }
+  
+  return updateTrack(state, trackId, { solo: !track.solo });
+}
+
+/**
+ * Set track height
+ * 
+ * @param state - Current timeline state
+ * @param trackId - ID of the track
+ * @param height - New height in pixels
+ * @returns New timeline state with track height updated
+ */
+export function setTrackHeight(state: TimelineState, trackId: string, height: number): TimelineState {
+  return updateTrack(state, trackId, { height: Math.max(40, Math.min(200, height)) });
+}

@@ -32,6 +32,7 @@ import { Clip } from '../types/clip';
 import { Frame } from '../types/frame';
 import { findTrackById, findClipById } from '../systems/queries';
 import { sortTrackClips } from '../types/track';
+import { validateTrackTypeMatch } from '../systems/validation';
 
 /**
  * Add a clip to a track
@@ -126,8 +127,11 @@ export function moveClip(state: TimelineState, clipId: string, newStart: Frame):
 /**
  * Resize a clip by changing its timeline bounds
  * 
- * This adjusts the timeline start/end while keeping media bounds unchanged.
- * Useful for trimming the visible portion of a clip.
+ * This adjusts the timeline bounds AND the corresponding media bounds
+ * to maintain the Phase 1 invariant: timeline duration === media duration.
+ * 
+ * Left resize: Updates timelineStart and mediaIn
+ * Right resize: Updates timelineEnd and mediaOut
  * 
  * @param state - Current timeline state
  * @param clipId - ID of the clip to resize
@@ -141,9 +145,35 @@ export function resizeClip(
   newStart: Frame,
   newEnd: Frame
 ): TimelineState {
+  const clip = findClipById(state, clipId);
+  if (!clip) {
+    return state;
+  }
+  
+  // Calculate deltas to determine which edge moved
+  const startDelta = newStart - clip.timelineStart;
+  const endDelta = newEnd - clip.timelineEnd;
+  
+  // Calculate new media bounds based on timeline changes
+  // Phase 1 invariant: timeline duration === media duration
+  let newMediaIn = clip.mediaIn;
+  let newMediaOut = clip.mediaOut;
+  
+  if (startDelta !== 0) {
+    // Left edge moved - adjust mediaIn
+    newMediaIn = (clip.mediaIn + startDelta) as Frame;
+  }
+  
+  if (endDelta !== 0) {
+    // Right edge moved - adjust mediaOut
+    newMediaOut = (clip.mediaOut + endDelta) as Frame;
+  }
+  
   return updateClip(state, clipId, {
     timelineStart: newStart,
     timelineEnd: newEnd,
+    mediaIn: newMediaIn,
+    mediaOut: newMediaOut,
   });
 }
 
@@ -222,10 +252,13 @@ export function updateClip(
  * 
  * Removes the clip from its current track and adds it to the target track.
  * 
+ * If validation fails (e.g., track type mismatch), returns state unchanged.
+ * The dispatcher will catch validation errors after the operation completes.
+ * 
  * @param state - Current timeline state
  * @param clipId - ID of the clip to move
  * @param targetTrackId - ID of the target track
- * @returns New timeline state with clip moved to new track
+ * @returns New timeline state with clip moved to new track, or unchanged state if validation fails
  */
 export function moveClipToTrack(
   state: TimelineState,
@@ -234,6 +267,28 @@ export function moveClipToTrack(
 ): TimelineState {
   const clip = findClipById(state, clipId);
   if (!clip) {
+    // Clip not found - return unchanged state
+    // Validation will catch this
+    return state;
+  }
+  
+  const targetTrack = findTrackById(state, targetTrackId);
+  if (!targetTrack) {
+    // Target track not found - return unchanged state
+    // Validation will catch this
+    return state;
+  }
+  
+  // Validate track type match
+  const validationResult = validateTrackTypeMatch(state, clip, targetTrack);
+  if (!validationResult.valid) {
+    // Track type mismatch - return unchanged state
+    // Validation will catch this and provide proper error details
+    return state;
+  }
+  
+  // Don't move if already on target track
+  if (clip.trackId === targetTrackId) {
     return state;
   }
   
