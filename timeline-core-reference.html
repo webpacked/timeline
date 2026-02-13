@@ -886,103 +886,137 @@ hr {
         This is the most important section. Get the architecture right and everything else flows naturally. Get it wrong and you'll rewrite everything later.
       </p>
 
-      <h3>The Three-Layer Philosophy</h3>
-      <p>Your timeline library is built on three conceptual layers that <strong>never mix</strong>:</p>
+      <h3>The Three-Layer Architecture (Current Implementation)</h3>
+      <p>The timeline library is built on three distinct layers with clear separation of concerns:</p>
 
-      <h4>1. Core Layer (Pure Functions)</h4>
-      <p>The core layer is <strong>framework-agnostic TypeScript</strong>. It has:</p>
+      <h4>1. Core Layer (@timeline/core) - The Engine</h4>
+      <p>The core is a <strong>deterministic, frame-based timeline editing kernel</strong> with:</p>
       <ul>
-        <li><strong>Zero dependencies</strong> on React, Vue, or any framework</li>
-        <li><strong>No side effects</strong> — all functions are pure</li>
-        <li><strong>Immutable data structures</strong> — never mutate input</li>
-        <li><strong>100% testable</strong> with simple unit tests</li>
+        <li><strong>TimelineEngine</strong> — Main API with 41 public methods for all operations</li>
+        <li><strong>8 Internal Systems</strong> — Validation, queries, snapping, linking, grouping, clipboard, drag-state, asset-registry</li>
+        <li><strong>Immutable state</strong> — All operations return new state, never mutate</li>
+        <li><strong>Built-in undo/redo</strong> — History system with configurable limits</li>
+        <li><strong>Frame-based time</strong> — Deterministic, no floating-point errors</li>
+        <li><strong>Zero framework dependencies</strong> — Pure TypeScript</li>
       </ul>
 
       <div class="code-block">
         <div class="code-header">
-          <span class="code-filename">Example: Core function signature</span>
+          <span class="code-filename">packages/core/src/engine/timeline-engine.ts</span>
           <span class="code-lang">typescript</span>
         </div>
-        <pre><span class="c">// ✅ GOOD: Pure function, no framework dependencies</span>
-<span class="k">export function</span> <span class="f">moveClip</span>(
-  <span class="v">timeline</span>: <span class="t">Timeline</span>,
-  <span class="v">clipId</span>: <span class="t">string</span>,
-  <span class="v">newStart</span>: <span class="t">number</span>,
-  <span class="v">newTrackId</span>?: <span class="t">string</span>
-): <span class="t">Timeline</span> {
-  <span class="c">// Returns NEW timeline object, never mutates input</span>
-  <span class="k">return</span> { ...timeline, tracks: newTracks }
+        <pre><span class="c">// The TimelineEngine is the main public API</span>
+<span class="k">import</span> { TimelineEngine, createTimelineState } <span class="k">from</span> <span class="s">'@timeline/core'</span>
+
+<span class="c">// Create engine with initial state</span>
+<span class="k">const</span> <span class="v">engine</span> = <span class="k">new</span> TimelineEngine(createTimelineState({
+  timeline: createTimeline({ <span class="c">/* ... */</span> })
+}))
+
+<span class="c">// All operations go through the engine</span>
+engine.addTrack(track)           <span class="c">// Returns DispatchResult</span>
+engine.addClip(trackId, clip)    <span class="c">// Validates and updates state</span>
+engine.moveClip(clipId, newStart) <span class="c">// Supports undo/redo</span>
+engine.undo()                    <span class="c">// Revert last operation</span>
+engine.redo()                    <span class="c">// Reapply operation</span>
+
+<span class="c">// Subscribe to state changes</span>
+<span class="k">const</span> <span class="v">unsubscribe</span> = engine.subscribe((<span class="v">state</span>) => {
+  console.log(<span class="s">'State changed:'</span>, state)
+})</pre>
+      </div>
+
+      <div class="callout callout-info">
+        <div class="callout-title">💡 Public vs Internal API</div>
+        <p><strong>Public API</strong> (from <code>@timeline/core</code>): TimelineEngine, factory functions, types, frame utilities</p>
+        <p><strong>Internal API</strong> (from <code>@timeline/core/internal</code>): Low-level operations, systems, utilities — used by tests and advanced integrations</p>
+      </div>
+
+      <h4>2. Adapter Layer (@timeline/react) - Framework Integration</h4>
+      <p>The React adapter provides hooks and context for state management:</p>
+      <ul>
+        <li><strong>TimelineProvider</strong> — Context provider wrapping the engine</li>
+        <li><strong>useEngine()</strong> — Access the engine instance</li>
+        <li><strong>useTimeline()</strong> — Subscribe to full timeline state</li>
+        <li><strong>useTrack(trackId)</strong> — Subscribe to specific track</li>
+        <li><strong>useClip(clipId)</strong> — Subscribe to specific clip</li>
+        <li><strong>Optimized subscriptions</strong> — Listeners receive state directly</li>
+      </ul>
+
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-filename">packages/react/src/hooks/useTimeline.ts</span>
+          <span class="code-lang">typescript</span>
+        </div>
+        <pre><span class="k">import</span> { TimelineProvider, useTimeline, useEngine } <span class="k">from</span> <span class="s">'@timeline/react'</span>
+
+<span class="c">// Wrap app with provider</span>
+<span class="k">function</span> <span class="f">App</span>() {
+  <span class="k">return</span> (
+    <span class="p">&lt;</span><span class="t">TimelineProvider</span> <span class="v">engine</span>={engine}<span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="t">TimelineView</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="t">TimelineProvider</span><span class="p">&gt;</span>
+  )
 }
 
-<span class="c">// ❌ BAD: Side effects, framework-coupled</span>
-<span class="k">function</span> <span class="f">moveClip</span>(<span class="v">clipId</span>, <span class="v">newStart</span>) {
-  <span class="c">// Uses React state directly — WRONG!</span>
-  setState(<span class="v">prev</span> => ({ ...prev, clips: updatedClips }))
+<span class="c">// Use hooks in components</span>
+<span class="k">function</span> <span class="f">TimelineView</span>() {
+  <span class="k">const</span> { state } = useTimeline()        <span class="c">// Full state</span>
+  <span class="k">const</span> <span class="v">engine</span> = useEngine()              <span class="c">// Engine instance</span>
+  <span class="k">const</span> <span class="v">track</span> = useTrack(<span class="s">'track-1'</span>)     <span class="c">// Specific track</span>
+  
+  <span class="k">return</span> <span class="p">&lt;</span><span class="t">div</span><span class="p">&gt;</span>{<span class="c">/* UI */</span>}<span class="p">&lt;/</span><span class="t">div</span><span class="p">&gt;</span>
 }</pre>
       </div>
 
-      <h4>2. Adapter Layer (Framework Integration)</h4>
-      <p>Adapters are thin wrappers that:</p>
+      <h4>3. UI Layer (@timeline/ui) - Components</h4>
+      <p>Pre-built components with local state management for UI interactions:</p>
       <ul>
-        <li><strong>Manage state</strong> using framework primitives (useState, ref, etc.)</li>
-        <li><strong>Handle side effects</strong> (useEffect, onMounted, etc.)</li>
-        <li><strong>Provide reactivity</strong> so UI updates when data changes</li>
-        <li><strong>Expose core functions</strong> through framework-friendly APIs</li>
+        <li><strong>Timeline</strong> — Main component managing playhead, zoom, snapping, selection</li>
+        <li><strong>Track</strong> — Track component with mute/solo/lock controls</li>
+        <li><strong>Clip</strong> — Draggable, resizable clip with selection</li>
+        <li><strong>TimeRuler</strong> — Time ruler with click-to-seek</li>
+        <li><strong>Local UI state</strong> — Managed in Timeline component, not in engine</li>
+        <li><strong>Keyboard shortcuts</strong> — Full support for all operations</li>
       </ul>
 
       <div class="code-block">
         <div class="code-header">
-          <span class="code-filename">Example: React adapter hook</span>
+          <span class="code-filename">packages/ui/src/timeline/Timeline.tsx</span>
           <span class="code-lang">typescript</span>
         </div>
-        <pre><span class="k">import</span> { useState } <span class="k">from</span> <span class="s">'react'</span>
-<span class="k">import</span> { moveClip <span class="k">as</span> coreMoveClip } <span class="k">from</span> <span class="s">'@timeline/core'</span>
-
-<span class="k">export function</span> <span class="f">useTimeline</span>(<span class="v">initialTimeline</span>: <span class="t">Timeline</span>) {
-  <span class="k">const</span> [<span class="v">timeline</span>, <span class="v">setTimeline</span>] = useState(initialTimeline)
+        <pre><span class="c">// Timeline manages local UI state</span>
+<span class="k">export function</span> <span class="f">Timeline</span>() {
+  <span class="k">const</span> { state } = useTimeline()
+  <span class="k">const</span> <span class="v">engine</span> = useEngine()
   
-  <span class="c">// Wrap core function with React state management</span>
-  <span class="k">const</span> <span class="f">moveClip</span> = (<span class="v">clipId</span>, <span class="v">newStart</span>, <span class="v">newTrackId</span>) => {
-    setTimeline(<span class="v">prev</span> => coreMoveClip(prev, clipId, newStart, newTrackId))
-  }
+  <span class="c">// Local UI state (not in engine)</span>
+  <span class="k">const</span> [<span class="v">playhead</span>, <span class="v">setPlayhead</span>] = useState(frame(<span class="n">0</span>))
+  <span class="k">const</span> [<span class="v">pixelsPerFrame</span>, <span class="v">setPixelsPerFrame</span>] = useState(<span class="n">1</span>)
+  <span class="k">const</span> [<span class="v">snappingEnabled</span>, <span class="v">setSnappingEnabled</span>] = useState(<span class="k">true</span>)
+  <span class="k">const</span> [<span class="v">editingMode</span>, <span class="v">setEditingMode</span>] = useState(<span class="s">'normal'</span>)
+  <span class="k">const</span> [<span class="v">selectedClipIds</span>, <span class="v">setSelectedClipIds</span>] = useState(<span class="k">new</span> Set())
   
-  <span class="k">return</span> { timeline, moveClip }
-}</pre>
-      </div>
-
-      <h4>3. Component Layer (UI Primitives)</h4>
-      <p>Components are the actual UI that developers install via CLI. They:</p>
-      <ul>
-        <li><strong>Use the adapter layer</strong> for state and logic</li>
-        <li><strong>Are unstyled by default</strong> (or use utility classes like Tailwind)</li>
-        <li><strong>Live in user's codebase</strong> — they can modify anything</li>
-        <li><strong>Follow composition patterns</strong> like Radix UI</li>
-      </ul>
-
-      <div class="code-block">
-        <div class="code-header">
-          <span class="code-filename">Example: Timeline component</span>
-          <span class="code-lang">tsx</span>
-        </div>
-        <pre><span class="k">import</span> { useTimeline } <span class="k">from</span> <span class="s">'@timeline/react'</span>
-
-<span class="k">export function</span> <span class="f">Timeline</span>({ <span class="v">initialData</span> }) {
-  <span class="k">const</span> { timeline, moveClip } = useTimeline(initialData)
+  <span class="c">// Keyboard shortcuts</span>
+  useEffect(() => {
+    <span class="k">const</span> <span class="f">handleKeyDown</span> = (<span class="v">e</span>) => {
+      <span class="k">if</span> (e.key === <span class="s">'Delete'</span>) {
+        selectedClipIds.forEach(<span class="v">id</span> => engine.removeClip(id))
+      }
+      <span class="c">// ... more shortcuts</span>
+    }
+    document.addEventListener(<span class="s">'keydown'</span>, handleKeyDown)
+  }, [selectedClipIds])
   
-  <span class="k">return</span> (
-    <span class="p">&lt;</span><span class="t">div</span> <span class="v">className</span>=<span class="s">"timeline-container"</span><span class="p">&gt;</span>
-      {timeline.tracks.map(<span class="v">track</span> => (
-        <span class="p">&lt;</span><span class="t">Track</span> <span class="v">key</span>={track.id} <span class="v">track</span>={track} <span class="p">/&gt;</span>
-      ))}
-    <span class="p">&lt;/</span><span class="t">div</span><span class="p">&gt;</span>
-  )
+  <span class="k">return</span> <span class="p">&lt;</span><span class="t">div</span><span class="p">&gt;</span>{<span class="c">/* Render timeline */</span>}<span class="p">&lt;/</span><span class="t">div</span><span class="p">&gt;</span>
 }</pre>
       </div>
 
       <div class="callout callout-success">
         <div class="callout-title">✅ Why This Architecture Works</div>
-        <p><strong>Separation of concerns:</strong> Logic, framework integration, and UI are completely separate. You can test core logic without mounting components. You can support new frameworks by only writing adapters. Users can completely customize UI without touching your logic.</p>
-        <p><strong>Future-proof:</strong> When you add video playback features later, they go in new packages (@timeline/playback) without breaking existing code.</p>
+        <p><strong>Clear separation:</strong> Engine handles timeline data and operations. React adapter manages subscriptions. UI components handle user interactions and visual state.</p>
+        <p><strong>Flexible UI state:</strong> Playhead, zoom, and selection live in UI (not engine) because they're view-specific and shouldn't be in undo/redo history.</p>
+        <p><strong>Testable:</strong> Core engine is 100% testable without React. UI components can be tested with React Testing Library.</p>
       </div>
     </div>
 

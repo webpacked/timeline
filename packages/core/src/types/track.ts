@@ -66,6 +66,12 @@ export interface Track {
   /** Whether the track is muted (affects playback) */
   muted: boolean;
   
+  /** Whether the track is soloed (mutes all other tracks) */
+  solo: boolean;
+  
+  /** Track height in pixels (for UI rendering) */
+  height: number;
+  
   /** Optional metadata for custom use cases */
   metadata?: Record<string, unknown>;
 }
@@ -83,6 +89,8 @@ export function createTrack(params: {
   clips?: Clip[];
   locked?: boolean;
   muted?: boolean;
+  solo?: boolean;
+  height?: number;
   metadata?: Record<string, unknown>;
 }): Track {
   const track: Track = {
@@ -92,6 +100,8 @@ export function createTrack(params: {
     clips: params.clips ?? [],
     locked: params.locked ?? false,
     muted: params.muted ?? false,
+    solo: params.solo ?? false,
+    height: params.height ?? 56,
   };
   
   if (params.metadata !== undefined) {
