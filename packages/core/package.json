@@ -20,7 +20,8 @@
   },
   "scripts": {
     "build": "tsup src/index.ts src/internal.ts --format cjs,esm --dts",
-    "dev": "tsup src/index.ts src/internal.ts --format cjs,esm --dts --watch"
+    "dev": "tsup src/index.ts src/internal.ts --format cjs,esm --dts --watch",
+    "test": "tsx src/__tests__/edge-case-tests.ts && tsx src/__tests__/stress-tests.ts && tsx src/__tests__/phase2-tests.ts"
   },
   "keywords": [],
   "author": "",
