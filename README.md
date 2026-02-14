@@ -93,14 +93,21 @@ pnpm --filter @timeline/core test
 
 ## CI/CD
 
-The project uses GitHub Actions for continuous integration:
+The project uses GitHub Actions for continuous integration with branch-specific behavior:
 
+### Dev Branch
 - ✅ Install dependencies
 - ✅ Build all packages
 - ✅ Run all tests (40 tests)
 - ✅ Verify build outputs
 
-See [CI_CONFIGURATION.md](./CI_CONFIGURATION.md) for details.
+### Main Branch
+All dev checks **plus**:
+- ✅ Changeset status validation
+- ✅ Uncommitted changes check
+- ✅ Publish dry run (validation only, no actual publishing)
+
+See [CI_WORKFLOW_GUIDE.md](./CI_WORKFLOW_GUIDE.md) for detailed documentation.
 
 ## Public API
 

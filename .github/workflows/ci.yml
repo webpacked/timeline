@@ -1,10 +1,16 @@
 name: CI
 
 on:
-  pull_request:
-    branches: [main]
+  # Trigger on push to dev or main branches
   push:
-    branches: [main]
+    branches: [dev, main]
+  
+  # Trigger on pull requests targeting dev or main
+  pull_request:
+    branches: [dev, main]
+  
+  # Allow manual workflow dispatch
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -12,8 +18,12 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Checkout
+      # ===== SETUP =====
+      
+      - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for changeset validation
       
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -25,6 +35,8 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+      
+      # ===== DEV + MAIN: Core validation steps =====
       
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -42,20 +54,54 @@ jobs:
           # Verify all packages built successfully
           for pkg in core react ui; do
             if [ ! -d "packages/$pkg/dist" ]; then
-              echo "@timeline/$pkg build failed - no dist directory"
+              echo "❌ @timeline/$pkg build failed - no dist directory"
               exit 1
             fi
             if [ ! -f "packages/$pkg/dist/index.d.ts" ]; then
-              echo "@timeline/$pkg missing type declarations"
+              echo "❌ @timeline/$pkg missing type declarations"
               exit 1
             fi
           done
           
           # Verify core internal exports
           if [ ! -f "packages/core/dist/internal.d.ts" ]; then
-            echo "@timeline/core missing internal type declarations"
+            echo "❌ @timeline/core missing internal type declarations"
             exit 1
           fi
           
-          echo "All packages built successfully with type declarations"
+          echo "✅ All packages built successfully with type declarations"
+      
+      # ===== MAIN ONLY: Release validation steps =====
+      
+      - name: Verify changeset status
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "📋 Checking changeset status for main branch..."
+          if pnpm changeset status 2>&1 | grep -q "no changesets were found"; then
+            echo "⚠️  Warning: Changes detected without changesets"
+            echo "ℹ️  Run 'pnpm changeset' to create a changeset before merging to main"
+            echo "ℹ️  Or run 'pnpm changeset add --empty' if no release is needed"
+            exit 1
+          else
+            pnpm changeset status
+            echo "✅ Changeset validation passed"
+          fi
+      
+      - name: Check for uncommitted changes
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🔍 Verifying no uncommitted changes after build..."
+          if ! git diff --exit-code; then
+            echo "❌ Build produced uncommitted changes"
+            git diff
+            exit 1
+          fi
+          echo "✅ No uncommitted changes detected"
+      
+      - name: Publish dry run
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🧪 Running publish dry run..."
+          pnpm changeset publish --dry-run
+          echo "✅ Publish dry run completed successfully"
 
