@@ -44,17 +44,40 @@ import { TimelineState } from '../types/state';
 import { Clip } from '../types/clip';
 import { Track } from '../types/track';
 import { Asset } from '../types/asset';
-import { Frame } from '../types/frame';
-import { TimelineMarker, ClipMarker, RegionMarker, WorkArea } from '../types/marker';
-import { HistoryState, createHistory, undo as undoHistory, redo as redoHistory, canUndo as canUndoHistory, canRedo as canRedoHistory, getCurrentState } from './history';
-import { dispatch, DispatchResult } from './dispatcher';
+import { TimelineFrame } from '../types/frame';
+import { HistoryState, createHistory, pushHistory, undo as undoHistory, redo as redoHistory, canUndo as canUndoHistory, canRedo as canRedoHistory, getCurrentState } from './history';
+import { dispatch } from './dispatcher';
+import type { DispatchResult, OperationPrimitive } from '../types/operations';
 import * as ClipOps from '../operations/clip-operations';
 import * as TrackOps from '../operations/track-operations';
 import * as TimelineOps from '../operations/timeline-operations';
 import * as RippleOps from '../operations/ripple';
-import * as MarkerOps from '../operations/marker-operations';
 import * as AssetRegistry from '../systems/asset-registry';
 import * as Queries from '../systems/queries';
+
+// ---------------------------------------------------------------------------
+// Legacy shim: wraps old callback-style operations into the new dispatch API.
+// This is a TEMPORARY compatibility bridge. Phase 1 replaces this class
+// entirely with direct dispatch(state, transaction) calls from the adapter.
+// ---------------------------------------------------------------------------
+type LegacyOperation = (state: TimelineState) => TimelineState;
+
+function legacyDispatch(
+  history: HistoryState,
+  operation: LegacyOperation
+): { accepted: boolean; history?: HistoryState; errors?: { code: string; message: string }[] } {
+  const currentState = getCurrentState(history);
+  let newState: TimelineState;
+  try {
+    newState = operation(currentState);
+  } catch (err) {
+    return { accepted: false, errors: [{ code: 'OPERATION_ERROR', message: String(err) }] };
+  }
+  // pushHistory is already imported at the top of this file
+  const newHistory = pushHistory(history, newState);
+  return { accepted: true, history: newHistory };
+}
+
 
 /**
  * TimelineEngine - The main timeline editing engine
@@ -135,11 +158,11 @@ export class TimelineEngine {
    * @param asset - Asset to register
    * @returns Dispatch result
    */
-  registerAsset(asset: Asset): DispatchResult {
-    const result = dispatch(this.history, (state) => 
+  registerAsset(asset: Asset): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       AssetRegistry.registerAsset(state, asset)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -165,11 +188,11 @@ export class TimelineEngine {
    * @param clip - Clip to add
    * @returns Dispatch result
    */
-  addClip(trackId: string, clip: Clip): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  addClip(trackId: string, clip: Clip): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.addClip(state, trackId, clip)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -182,11 +205,11 @@ export class TimelineEngine {
    * @param clipId - ID of the clip to remove
    * @returns Dispatch result
    */
-  removeClip(clipId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  removeClip(clipId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.removeClip(state, clipId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -200,11 +223,11 @@ export class TimelineEngine {
    * @param newStart - New timeline start frame
    * @returns Dispatch result
    */
-  moveClip(clipId: string, newStart: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  moveClip(clipId: string, newStart: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.moveClip(state, clipId, newStart)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -219,11 +242,11 @@ export class TimelineEngine {
    * @param newEnd - New timeline end frame
    * @returns Dispatch result
    */
-  resizeClip(clipId: string, newStart: Frame, newEnd: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  resizeClip(clipId: string, newStart: TimelineFrame, newEnd: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.resizeClip(state, clipId, newStart, newEnd)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -238,11 +261,11 @@ export class TimelineEngine {
    * @param newMediaOut - New media out frame
    * @returns Dispatch result
    */
-  trimClip(clipId: string, newMediaIn: Frame, newMediaOut: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  trimClip(clipId: string, newMediaIn: TimelineFrame, newMediaOut: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.trimClip(state, clipId, newMediaIn, newMediaOut)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -256,11 +279,11 @@ export class TimelineEngine {
    * @param targetTrackId - ID of the target track
    * @returns Dispatch result
    */
-  moveClipToTrack(clipId: string, targetTrackId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  moveClipToTrack(clipId: string, targetTrackId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       ClipOps.moveClipToTrack(state, clipId, targetTrackId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -275,11 +298,11 @@ export class TimelineEngine {
    * @param track - Track to add
    * @returns Dispatch result
    */
-  addTrack(track: Track): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  addTrack(track: Track): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.addTrack(state, track)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -292,11 +315,11 @@ export class TimelineEngine {
    * @param trackId - ID of the track to remove
    * @returns Dispatch result
    */
-  removeTrack(trackId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  removeTrack(trackId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.removeTrack(state, trackId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -310,11 +333,11 @@ export class TimelineEngine {
    * @param newIndex - New index position
    * @returns Dispatch result
    */
-  moveTrack(trackId: string, newIndex: number): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  moveTrack(trackId: string, newIndex: number): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.moveTrack(state, trackId, newIndex)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -327,11 +350,11 @@ export class TimelineEngine {
    * @param trackId - ID of the track
    * @returns Dispatch result
    */
-  toggleTrackMute(trackId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  toggleTrackMute(trackId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.toggleTrackMute(state, trackId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -344,11 +367,11 @@ export class TimelineEngine {
    * @param trackId - ID of the track
    * @returns Dispatch result
    */
-  toggleTrackLock(trackId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  toggleTrackLock(trackId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.toggleTrackLock(state, trackId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -361,11 +384,11 @@ export class TimelineEngine {
    * @param trackId - ID of the track
    * @returns Dispatch result
    */
-  toggleTrackSolo(trackId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  toggleTrackSolo(trackId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.toggleTrackSolo(state, trackId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -379,11 +402,11 @@ export class TimelineEngine {
    * @param height - New height in pixels
    * @returns Dispatch result
    */
-  setTrackHeight(trackId: string, height: number): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  setTrackHeight(trackId: string, height: number): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TrackOps.setTrackHeight(state, trackId, height)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -398,11 +421,11 @@ export class TimelineEngine {
    * @param duration - New duration in frames
    * @returns Dispatch result
    */
-  setTimelineDuration(duration: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  setTimelineDuration(duration: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TimelineOps.setTimelineDuration(state, duration)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -415,11 +438,11 @@ export class TimelineEngine {
    * @param name - New timeline name
    * @returns Dispatch result
    */
-  setTimelineName(name: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  setTimelineName(name: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       TimelineOps.setTimelineName(state, name)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -512,8 +535,8 @@ export class TimelineEngine {
    * @param frame - Frame to check
    * @returns Array of clips at that frame
    */
-  getClipsAtFrame(frame: Frame): Clip[] {
-    return Queries.getClipsAtFrame(this.getState(), frame);
+  getClipsAtFrame(f: TimelineFrame): Clip[] {
+    return Queries.getClipsAtFrame(this.getState(), f);
   }
   
   /**
@@ -523,7 +546,7 @@ export class TimelineEngine {
    * @param end - End frame
    * @returns Array of clips in the range
    */
-  getClipsInRange(start: Frame, end: Frame): Clip[] {
+  getClipsInRange(start: TimelineFrame, end: TimelineFrame): Clip[] {
     return Queries.getClipsInRange(this.getState(), start, end);
   }
   
@@ -541,7 +564,7 @@ export class TimelineEngine {
    * 
    * @returns Array of all tracks
    */
-  getAllTracks(): Track[] {
+  getAllTracks(): readonly Track[] {
     return Queries.getAllTracks(this.getState());
   }
   
@@ -553,11 +576,11 @@ export class TimelineEngine {
    * @param clipId - ID of the clip to delete
    * @returns Dispatch result
    */
-  rippleDelete(clipId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  rippleDelete(clipId: string): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       RippleOps.rippleDelete(state, clipId)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -571,11 +594,11 @@ export class TimelineEngine {
    * @param newEnd - New end frame for the clip
    * @returns Dispatch result
    */
-  rippleTrim(clipId: string, newEnd: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  rippleTrim(clipId: string, newEnd: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       RippleOps.rippleTrim(state, clipId, newEnd)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -590,30 +613,11 @@ export class TimelineEngine {
    * @param atFrame - Frame to insert at
    * @returns Dispatch result
    */
-  insertEdit(trackId: string, clip: Clip, atFrame: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
+  insertEdit(trackId: string, clip: Clip, atFrame: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
       RippleOps.insertEdit(state, trackId, clip, atFrame)
     );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
-  
-  // ===== MARKER OPERATIONS =====
-  
-  /**
-   * Add a timeline marker
-   * 
-   * @param marker - Timeline marker to add
-   * @returns Dispatch result
-   */
-  addTimelineMarker(marker: TimelineMarker): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.addTimelineMarker(state, marker)
-    );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
     }
@@ -621,131 +625,56 @@ export class TimelineEngine {
   }
   
   /**
-   * Add a clip marker
+   * Ripple move - move clip and shift surrounding clips to accommodate
    * 
-   * @param marker - Clip marker to add
+   * This moves a clip to a new position while maintaining timeline continuity:
+   * - Closes the gap at the source position
+   * - Makes space at the destination position
+   * - All operations are atomic (single undo entry)
+   * 
+   * @param clipId - ID of the clip to move
+   * @param newStart - New start frame for the clip
    * @returns Dispatch result
    */
-  addClipMarker(marker: ClipMarker): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.addClipMarker(state, marker)
+  rippleMove(clipId: string, newStart: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
+      RippleOps.rippleMove(state, clipId, newStart)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
+    } else if (!result.accepted && result.errors?.[0]?.code === 'OPERATION_ERROR') {
+      throw new Error(result.errors[0].message);
     }
     return result;
   }
   
   /**
-   * Add a region marker
+   * Insert move - move clip and shift destination clips right
    * 
-   * @param marker - Region marker to add
+   * This moves a clip to a new position without closing the gap at source:
+   * - Leaves gap at the source position
+   * - Pushes all clips at destination right to make space
+   * - All operations are atomic (single undo entry)
+   * 
+   * @param clipId - ID of the clip to move
+   * @param newStart - New start frame for the clip
    * @returns Dispatch result
    */
-  addRegionMarker(marker: RegionMarker): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.addRegionMarker(state, marker)
+  insertMove(clipId: string, newStart: TimelineFrame): { accepted: boolean; errors?: { code: string; message: string }[] } {
+    const result = legacyDispatch(this.history, (state) =>
+      RippleOps.insertMove(state, clipId, newStart)
     );
-    if (result.success) {
+    if (result.accepted && result.history) {
       this.history = result.history;
       this.notify();
+    } else if (!result.accepted && result.errors?.[0]?.code === 'OPERATION_ERROR') {
+      throw new Error(result.errors[0].message);
     }
     return result;
   }
   
-  /**
-   * Remove a marker by ID
-   * 
-   * @param markerId - ID of the marker to remove
-   * @returns Dispatch result
-   */
-  removeMarker(markerId: string): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.removeMarker(state, markerId)
-    );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
-  
-  /**
-   * Update a timeline marker
-   * 
-   * @param markerId - ID of the marker to update
-   * @param updates - Partial marker updates
-   * @returns Dispatch result
-   */
-  updateTimelineMarker(
-    markerId: string,
-    updates: Partial<Omit<TimelineMarker, 'id' | 'type'>>
-  ): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.updateTimelineMarker(state, markerId, updates)
-    );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
-  
-  /**
-   * Update a region marker
-   * 
-   * @param markerId - ID of the marker to update
-   * @param updates - Partial marker updates
-   * @returns Dispatch result
-   */
-  updateRegionMarker(
-    markerId: string,
-    updates: Partial<Omit<RegionMarker, 'id' | 'type'>>
-  ): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.updateRegionMarker(state, markerId, updates)
-    );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
-  
-  // ===== WORK AREA OPERATIONS =====
-  
-  /**
-   * Set work area
-   * 
-   * @param start - Start frame
-   * @param end - End frame
-   * @returns Dispatch result
-   */
-  setWorkArea(start: Frame, end: Frame): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.setWorkArea(state, { startFrame: start, endFrame: end })
-    );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
-  
-  /**
-   * Clear work area
-   * 
-   * @returns Dispatch result
-   */
-  clearWorkArea(): DispatchResult {
-    const result = dispatch(this.history, (state) =>
-      MarkerOps.clearWorkArea(state)
-    );
-    if (result.success) {
-      this.history = result.history;
-      this.notify();
-    }
-    return result;
-  }
+  // Phase 2: Marker and WorkArea operations are gated to Phase 2.
+  // They are intentionally omitted here to keep Phase 0 clean.
 }
+

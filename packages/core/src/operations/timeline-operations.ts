@@ -21,7 +21,8 @@
  */
 
 import { TimelineState } from '../types/state';
-import { Frame } from '../types/frame';
+import type { TimelineFrame } from '../types/frame';
+type Frame = TimelineFrame;
 
 /**
  * Set the timeline duration
@@ -57,25 +58,6 @@ export function setTimelineName(state: TimelineState, name: string): TimelineSta
   };
 }
 
-/**
- * Update timeline metadata
- * 
- * @param state - Current timeline state
- * @param metadata - Metadata to merge with existing metadata
- * @returns New timeline state with updated metadata
- */
-export function updateTimelineMetadata(
-  state: TimelineState,
-  metadata: Record<string, unknown>
-): TimelineState {
-  return {
-    ...state,
-    timeline: {
-      ...state.timeline,
-      metadata: {
-        ...state.timeline.metadata,
-        ...metadata,
-      },
-    },
-  };
-}
+// updateTimelineMetadata removed — Timeline has no metadata field in Phase 0.
+// Will be re-added in Phase 3 (project metadata).
+

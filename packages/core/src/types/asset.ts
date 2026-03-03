@@ -1,84 +1,110 @@
 /**
- * ASSET MODEL
- * 
- * An Asset represents immutable metadata about a media file.
- * 
- * WHAT IS AN ASSET?
- * - A reference to source media (video, audio, image)
- * - Contains metadata like duration and type
- * - Immutable once registered (duration never changes)
- * 
- * WHY SEPARATE ASSETS FROM CLIPS?
- * - Multiple clips can reference the same asset
- * - Asset duration is the source of truth
- * - Clips can trim/slice the asset without modifying it
- * 
- * EXAMPLE:
- * ```typescript
- * const asset: Asset = {
- *   id: 'asset_1',
- *   type: 'video',
- *   duration: frame(3600),  // 2 minutes at 30fps
- *   sourceUrl: 'https://example.com/video.mp4',
- * };
- * ```
- * 
- * INVARIANTS:
- * - Asset ID must be unique
- * - Duration must be positive
- * - Duration is immutable after registration
+ * ASSET MODEL — Phase 0 + Phase 3
+ *
+ * Asset is FileAsset | GeneratorAsset. Multiple Clips can reference the same Asset.
+ * Assets never change their intrinsicDuration after registration.
  */
 
-import type { Frame } from './frame';
+import type { TimelineFrame, FrameRate } from './frame';
+import type { TrackType } from './track';
+import type { Generator } from './generator';
 
-/**
- * AssetType - The kind of media this asset represents
- */
-export type AssetType = 'video' | 'audio' | 'image';
+// ---------------------------------------------------------------------------
+// Branded IDs
+// ---------------------------------------------------------------------------
 
-/**
- * Asset - Immutable metadata about a media file
- */
-export interface Asset {
-  /** Unique identifier */
-  id: string;
-  
-  /** Type of media */
-  type: AssetType;
-  
-  /** Total duration of the asset in frames */
-  duration: Frame;
-  
-  /** Source URL or file path */
-  sourceUrl: string;
-  
-  /** Optional metadata for custom use cases */
-  metadata?: Record<string, unknown>;
-}
+export type AssetId = string & { readonly __brand: 'AssetId' };
 
-/**
- * Create a new asset
- * 
- * @param params - Asset parameters
- * @returns A new Asset object
- */
+export const toAssetId = (s: string): AssetId => s as AssetId;
+
+// ---------------------------------------------------------------------------
+// Asset status
+// ---------------------------------------------------------------------------
+
+export type AssetStatus = 'online' | 'offline' | 'proxy-only' | 'missing';
+
+// ---------------------------------------------------------------------------
+// FileAsset — media file on disk
+// ---------------------------------------------------------------------------
+
+export type FileAsset = {
+  readonly kind: 'file';
+  readonly id: AssetId;
+  readonly name: string;
+  readonly mediaType: TrackType;
+  readonly filePath: string;
+  readonly intrinsicDuration: TimelineFrame;
+  readonly nativeFps: FrameRate;
+  readonly sourceTimecodeOffset: TimelineFrame;
+  readonly status: AssetStatus;
+};
+
+// ---------------------------------------------------------------------------
+// GeneratorAsset — synthetic asset (no filePath)
+// ---------------------------------------------------------------------------
+
+export type GeneratorAsset = {
+  readonly kind: 'generator';
+  readonly id: AssetId;
+  readonly name: string;
+  readonly mediaType: TrackType;
+  readonly intrinsicDuration: TimelineFrame;
+  readonly nativeFps: FrameRate;
+  readonly sourceTimecodeOffset: TimelineFrame;
+  readonly status: AssetStatus;
+  readonly generatorDef: Generator;
+};
+
+// ---------------------------------------------------------------------------
+// Asset — discriminated union
+// ---------------------------------------------------------------------------
+
+export type Asset = FileAsset | GeneratorAsset;
+
+// ---------------------------------------------------------------------------
+// Factories
+// ---------------------------------------------------------------------------
+
 export function createAsset(params: {
   id: string;
-  type: AssetType;
-  duration: Frame;
-  sourceUrl: string;
-  metadata?: Record<string, unknown>;
-}): Asset {
-  const asset: Asset = {
-    id: params.id,
-    type: params.type,
-    duration: params.duration,
-    sourceUrl: params.sourceUrl,
+  name: string;
+  mediaType: TrackType;
+  filePath: string;
+  intrinsicDuration: TimelineFrame;
+  nativeFps: FrameRate;
+  sourceTimecodeOffset: TimelineFrame;
+  status?: AssetStatus;
+}): FileAsset {
+  return {
+    kind: 'file',
+    id: params.id as AssetId,
+    name: params.name,
+    mediaType: params.mediaType,
+    filePath: params.filePath,
+    intrinsicDuration: params.intrinsicDuration,
+    nativeFps: params.nativeFps,
+    sourceTimecodeOffset: params.sourceTimecodeOffset,
+    status: params.status ?? 'online',
   };
-  
-  if (params.metadata !== undefined) {
-    asset.metadata = params.metadata;
-  }
-  
-  return asset;
+}
+
+export function createGeneratorAsset(params: {
+  id: string;
+  name: string;
+  mediaType: TrackType;
+  generatorDef: Generator;
+  nativeFps: FrameRate;
+  status?: AssetStatus;
+}): GeneratorAsset {
+  return {
+    kind: 'generator',
+    id: params.id as AssetId,
+    name: params.name,
+    mediaType: params.mediaType,
+    intrinsicDuration: params.generatorDef.duration,
+    nativeFps: params.nativeFps,
+    sourceTimecodeOffset: 0 as TimelineFrame,
+    status: params.status ?? 'online',
+    generatorDef: params.generatorDef,
+  };
 }

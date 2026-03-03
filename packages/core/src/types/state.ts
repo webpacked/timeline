@@ -1,114 +1,65 @@
 /**
- * TIMELINE STATE
- * 
- * This is the complete state shape for the timeline engine.
- * 
- * WHAT IS TIMELINE STATE?
- * - The root state object that contains everything
- * - Timeline (tracks and clips)
- * - Assets (media metadata)
- * 
- * WHY SEPARATE STATE?
- * - Clear separation between timeline structure and asset registry
- * - Assets can be shared across multiple clips
- * - State is the single source of truth
- * 
- * EXAMPLE:
- * ```typescript
- * const state: TimelineState = {
- *   timeline: {
- *     id: 'timeline_1',
- *     name: 'My Project',
- *     fps: frameRate(30),
- *     duration: frame(9000),
- *     tracks: [],
- *   },
- *   assets: new Map([
- *     ['asset_1', { id: 'asset_1', type: 'video', duration: frame(3600), sourceUrl: '...' }],
- *   ]),
- * };
- * ```
- * 
- * IMMUTABILITY:
- * All operations on TimelineState must return a NEW state object.
+ * TIMELINE STATE — Phase 0 compliant
+ *
+ * TimelineState is the single source of truth for the engine.
+ * Phase 0 only: timeline + assetRegistry. No Phase 2 fields.
+ *
+ * RULE: Every function that changes state returns a NEW TimelineState.
  * Never mutate the existing state.
  */
 
-import { Timeline } from './timeline';
-import { Asset } from './asset';
-import { LinkGroup } from './linking';
-import { Group } from './grouping';
-import { TimelineMarker, ClipMarker, RegionMarker, WorkArea } from './marker';
+import type { Timeline } from './timeline';
+import type { Asset, AssetId } from './asset';
+
+// ---------------------------------------------------------------------------
+// AssetRegistry — ReadonlyMap is the invariant boundary
+// ---------------------------------------------------------------------------
+
+export type AssetRegistry = ReadonlyMap<AssetId, Asset>;
+
+// ---------------------------------------------------------------------------
+// Schema versioning
+// ---------------------------------------------------------------------------
 
 /**
- * TimelineState - The complete state for the timeline engine
- * 
- * Phase 2 additions:
- * - linkGroups: Synchronized editing groups
- * - groups: Visual organization groups
- * - markers: Timeline/clip/region markers
- * - workArea: Active editing region
+ * Increment this whenever TimelineState gains a new required field or
+ * a field's semantics change in a breaking way.
+ *
+ * The schemaVersion invariant check rejects loading a future schema
+ * into an older engine (prevents silent data corruption on downgrade).
  */
-export interface TimelineState {
-  /** The timeline (tracks and clips) */
-  timeline: Timeline;
-  
-  /** Asset registry (media metadata) */
-  assets: Map<string, Asset>;
-  
-  // === PHASE 2: EDITING INTELLIGENCE ===
-  
-  /** Link groups for synchronized editing */
-  linkGroups: Map<string, LinkGroup>;
-  
-  /** Groups for visual organization */
-  groups: Map<string, Group>;
-  
-  /** Markers for navigation and annotation */
-  markers: {
-    timeline: TimelineMarker[];
-    clips: ClipMarker[];
-    regions: RegionMarker[];
-  };
-  
-  /** Optional work area definition */
-  workArea?: WorkArea;
-}
+export const CURRENT_SCHEMA_VERSION = 2 as const;
 
-/**
- * Create a new timeline state
- * 
- * @param params - State parameters
- * @returns A new TimelineState object
- */
+// ---------------------------------------------------------------------------
+// TimelineState
+// ---------------------------------------------------------------------------
+
+export type TimelineState = {
+  readonly schemaVersion: number;        // must equal CURRENT_SCHEMA_VERSION
+  readonly timeline:      Timeline;
+  readonly assetRegistry: AssetRegistry;
+};
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
 export function createTimelineState(params: {
-  timeline: Timeline;
-  assets?: Map<string, Asset>;
-  linkGroups?: Map<string, LinkGroup>;
-  groups?: Map<string, Group>;
-  markers?: {
-    timeline: TimelineMarker[];
-    clips: ClipMarker[];
-    regions: RegionMarker[];
-  };
-  workArea?: WorkArea;
+  timeline:       Timeline;
+  assetRegistry?: AssetRegistry;
+  /** @deprecated use assetRegistry. Kept for test backward-compat only. */
+  assets?:        Map<string, Asset>;
 }): TimelineState {
-  const state: TimelineState = {
-    timeline: params.timeline,
-    assets: params.assets ?? new Map(),
-    linkGroups: params.linkGroups ?? new Map(),
-    groups: params.groups ?? new Map(),
-    markers: params.markers ?? {
-      timeline: [],
-      clips: [],
-      regions: [],
-    },
+  // Support legacy 'assets' param during test migration
+  const registry: AssetRegistry =
+    params.assetRegistry ??
+    (params.assets
+      ? (params.assets as unknown as AssetRegistry)
+      : new Map<AssetId, Asset>());
+
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    timeline:      params.timeline,
+    assetRegistry: registry,
   };
-  
-  // Only add workArea if explicitly provided
-  if (params.workArea !== undefined) {
-    state.workArea = params.workArea;
-  }
-  
-  return state;
 }

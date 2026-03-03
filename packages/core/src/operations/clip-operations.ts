@@ -29,7 +29,9 @@
 
 import { TimelineState } from '../types/state';
 import { Clip } from '../types/clip';
-import { Frame } from '../types/frame';
+import type { TimelineFrame } from '../types/frame';
+import type { TrackId } from '../types/track';
+type Frame = TimelineFrame; // local alias for readability
 import { findTrackById, findClipById } from '../systems/queries';
 import { sortTrackClips } from '../types/track';
 import { validateTrackTypeMatch } from '../systems/validation';
@@ -296,7 +298,7 @@ export function moveClipToTrack(
   let newState = removeClip(state, clipId);
   
   // Update clip's trackId and add to new track
-  const updatedClip = { ...clip, trackId: targetTrackId };
+  const updatedClip: Clip = { ...clip, trackId: targetTrackId as TrackId };
   newState = addClip(newState, targetTrackId, updatedClip);
   
   return newState;

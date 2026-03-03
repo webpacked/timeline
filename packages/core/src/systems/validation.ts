@@ -19,7 +19,7 @@
  * - Asset must exist in registry
  * - timelineEnd > timelineStart
  * - mediaOut > mediaIn
- * - mediaOut <= asset.duration
+ * - mediaOut <= asset.intrinsicDuration
  * - Timeline duration === media duration (Phase 1, no speed)
  * 
  * TRACK VALIDATION:
@@ -103,11 +103,11 @@ export function validateClip(state: TimelineState, clip: Clip): ValidationResult
   }
   
   // Check media bounds don't exceed asset duration
-  if (clip.mediaOut > asset.duration) {
+  if (clip.mediaOut > asset.intrinsicDuration) {
     errors.push(invalidResult(
       'MEDIA_EXCEEDS_ASSET',
-      `Clip media out (${clip.mediaOut}) exceeds asset duration (${asset.duration})`,
-      { clipId: clip.id, mediaOut: clip.mediaOut, assetDuration: asset.duration }
+      `Clip media out (${clip.mediaOut}) exceeds asset duration (${asset.intrinsicDuration})`,
+      { clipId: clip.id, mediaOut: clip.mediaOut, assetDuration: asset.intrinsicDuration }
     ));
   }
   
@@ -286,44 +286,33 @@ export function validateTrackTypeMatch(
   
   // Check if asset type matches track type
   // Note: 'image' assets can go on 'video' tracks
-  if (asset.type === 'video' && targetTrack.type !== 'video') {
+  if (asset.mediaType === 'video' && targetTrack.type !== 'video') {
     return invalidResult(
       'TRACK_TYPE_MISMATCH',
       `Cannot place video clip '${clip.id}' on ${targetTrack.type} track '${targetTrack.id}'`,
       {
         clipId: clip.id,
-        assetType: asset.type,
+        assetType: asset.mediaType,
         trackType: targetTrack.type,
         trackId: targetTrack.id,
       }
     );
   }
   
-  if (asset.type === 'audio' && targetTrack.type !== 'audio') {
+  if (asset.mediaType === 'audio' && targetTrack.type !== 'audio') {
     return invalidResult(
       'TRACK_TYPE_MISMATCH',
       `Cannot place audio clip '${clip.id}' on ${targetTrack.type} track '${targetTrack.id}'`,
       {
         clipId: clip.id,
-        assetType: asset.type,
+        assetType: asset.mediaType,
         trackType: targetTrack.type,
         trackId: targetTrack.id,
       }
     );
   }
   
-  if (asset.type === 'image' && targetTrack.type !== 'video') {
-    return invalidResult(
-      'TRACK_TYPE_MISMATCH',
-      `Cannot place image clip '${clip.id}' on ${targetTrack.type} track '${targetTrack.id}'`,
-      {
-        clipId: clip.id,
-        assetType: asset.type,
-        trackType: targetTrack.type,
-        trackId: targetTrack.id,
-      }
-    );
-  }
+  // 'image' asset support: Phase 3. Treat as video-track compatible for now.
   
   return validResult();
 }

@@ -1,128 +1,58 @@
-# Timeline Editor
+# @timeline
 
-[![CI](https://github.com/maanaaasss/timeline/actions/workflows/ci.yml/badge.svg)](https://github.com/maanaaasss/timeline/actions/workflows/ci.yml)
-
-A production-ready, headless timeline editor engine with React bindings and UI components.
-
-## Features
-
-- **Headless Architecture** - Pure TypeScript engine with no UI dependencies
-- **Undo/Redo** - Complete history management with validation pipeline
-- **Track Management** - Solo, mute, lock, height adjustment
-- **Clip Operations** - Move, trim, ripple delete, copy/paste, split
-- **Markers** - Timeline markers, clip markers, and region markers
-- **Work Area** - Define and manage work areas for focused editing
-- **Playhead Control** - Draggable playhead with keyboard shortcuts
-- **Snapping** - Smart snapping to clips, markers, and playhead
-- **Type-Safe** - Full TypeScript support with zero errors
+A professional open-source NLE (Non-Linear Editor)
+timeline engine for the web.
 
 ## Packages
 
-This monorepo contains:
-
-- **[@timeline/core](./packages/core)** - Core timeline engine (41 public methods)
-- **[@timeline/react](./packages/react)** - React hooks and provider
-- **[@timeline/ui](./packages/ui)** - Presentational React components
-- **[demo](./apps/demo)** - Interactive demo application
-
-## Quick Start
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run demo application
-pnpm dev
-
-# Run all tests
-pnpm test
-
-# Build all packages
-pnpm build
-```
-
-The demo will be available at http://localhost:3004
+| Package | Description | Install |
+|---------|-------------|---------|
+| `@timeline/core` | Headless TypeScript engine | `npm i @timeline/core` |
+| `@timeline/react` | React adapter + hooks | `npm i @timeline/react` |
+| `@timeline/ui` | shadcn-style components | `npx timeline-ui add timeline` |
 
 ## Architecture
+Your App
+└── @timeline/ui       (components you own)
+└── @timeline/react  (hooks + engine)
+└── @timeline/core   (pure TS engine)
 
-The timeline editor follows a strict architectural pattern:
+@timeline/core is framework-agnostic. It runs in
+the browser, Node.js, Web Workers, and Electron.
+React is never imported by core.
 
-1. **Core Operations** - Pure functions for all business logic
-2. **Dispatcher** - Handles validation, history recording, and state updates
-3. **Engine** - Thin orchestration layer exposing public API
-4. **React Bindings** - Hooks that subscribe to state changes
-5. **UI Components** - Presentational components using the hooks
-
-See [API_STABILITY_AUDIT.md](./API_STABILITY_AUDIT.md) for detailed API documentation.
-
-## Development
-
+## Quick Start
 ```bash
-# Install dependencies
-pnpm install
+# Install engine + adapter
+npm install @timeline/core @timeline/react
 
-# Run demo in development mode
-pnpm dev
-
-# Run tests with watch mode
-pnpm test --watch
-
-# Build all packages
-pnpm build
-
-# Type check
-pnpm typecheck
+# Copy UI components into your project
+npx timeline-ui add timeline
+# Components land in ./components/timeline/
+# You own the code — edit freely.
 ```
 
-## Testing
+## Status
 
-All packages include comprehensive tests:
+| Phase | Description | Status |
+|-------|-------------|--------|
+| 0 | Foundation — types, dispatch, history | ✅ |
+| 1 | Tool scaffolding + React adapter scaffold | ✅ |
+| 2 | Core tools — Select, Razor, Trim, Slip, Delete, Insert | ✅ |
+| 3 | Markers, BeatGrid, Generators, Captions, SRT/VTT | ✅ |
+| 4 | Effects, Keyframes, Transitions, Track Groups | ✅ |
+| 5 | Serialization — JSON, OTIO, EDL, AAF, FCPXML | ✅ |
+| 6 | Playback engine — PlayheadController, pipeline contracts | ✅ |
+| 7 | Performance — interval tree, compression, benchmarks | ✅ |
+| R | @timeline/react — full adapter buildout | 🔄 Next |
+| U | @timeline/ui — shadcn-style components | ⬜ |
 
-```bash
-# Run all tests
-pnpm test
+**@timeline/core — Feature Complete**
+942 tests · 0 TypeScript errors
 
-# Run tests for specific package
-pnpm --filter @timeline/core test
-```
+## Contributing
 
-- 40 passing tests across 3 test suites
-- Edge case testing
-- Stress testing
-- Phase 2 feature testing
-
-## CI/CD
-
-The project uses GitHub Actions for continuous integration with branch-specific behavior:
-
-### Dev Branch
-- ✅ Install dependencies
-- ✅ Build all packages
-- ✅ Run all tests (40 tests)
-- ✅ Verify build outputs
-
-### Main Branch
-All dev checks **plus**:
-- ✅ Changeset status validation
-- ✅ Uncommitted changes check
-- ✅ Publish dry run (validation only, no actual publishing)
-
-See [CI_WORKFLOW_GUIDE.md](./CI_WORKFLOW_GUIDE.md) for detailed documentation.
-
-## Public API
-
-The engine exposes 41 public methods organized into categories:
-
-- **Playback** - `setPlayhead()`, `play()`, `pause()`, etc.
-- **Selection** - `setSelection()`, `clearSelection()`, `selectAll()`
-- **History** - `undo()`, `redo()`, `canUndo()`, `canRedo()`
-- **Clips** - `moveClip()`, `trimClip()`, `splitClip()`, `deleteClips()`
-- **Tracks** - `addTrack()`, `removeTrack()`, `toggleTrackSolo()`, `setTrackHeight()`
-- **Markers** - `addTimelineMarker()`, `addClipMarker()`, `addRegionMarker()`
-- **Work Area** - `setWorkArea()`, `clearWorkArea()`
-- **Ripple** - `rippleDelete()`, `rippleTrim()`, `insertEdit()`
-
-See the [Core Package README](./packages/core/README.md) for full API documentation.
+See CONTRIBUTING.md (coming soon).
 
 ## License
 

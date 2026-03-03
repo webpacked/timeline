@@ -5,7 +5,7 @@ import {
   calculateSnapExcluding,
   type SnapResult 
 } from '@timeline/core/internal';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 
 type DragMode = 'move' | 'resize-left' | 'resize-right';
 
@@ -59,8 +59,94 @@ export function Clip({
     return null;
   }
 
-  const width = (clip.timelineEnd - clip.timelineStart) * pixelsPerFrame;
-  const left = clip.timelineStart * pixelsPerFrame;
+  // Get asset information for display - memoized to avoid recalculation on every render
+  const asset = useMemo(() => engine.getAsset(clip.assetId), [engine, clip.assetId]);
+  
+  /**
+   * Extract display name from asset source URL
+   * 
+   * Handles:
+   * - URLs with query strings: https://cdn.com/video.mp4?token=abc
+   * - URLs with fragments: file:///path/video.mp4#t=10
+   * - File paths (Unix): /path/to/video.mp4
+   * - File paths (Windows): C:\Users\Videos\video.mp4
+   * - URLs without filenames: https://api.example.com/stream/123
+   * - Dotfiles: .gitignore
+   * 
+   * @returns Display name for the asset
+   */
+  const getAssetDisplayName = useCallback((): string => {
+    if (!asset) {
+      console.warn(`Asset not found for clip ${clipId}`);
+      return `Clip ${clipId.slice(0, 8)}`;
+    }
+    
+    try {
+      // Try to parse as URL first
+      const url = new URL(asset.sourceUrl);
+      const pathname = url.pathname;
+      
+      // Extract filename from pathname
+      const segments = pathname.split('/').filter(Boolean);
+      const filename = segments[segments.length - 1] || '';
+      
+      if (filename) {
+        // Remove file extension
+        const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+        return nameWithoutExt || filename;
+      }
+      
+      // No filename in URL, use asset type as fallback
+      return asset.type.toUpperCase();
+      
+    } catch {
+      // Not a valid URL, treat as file path
+      // Handle both Unix (/) and Windows (\) path separators
+      const parts = asset.sourceUrl.split(/[/\\]/).filter(Boolean);
+      const filename = parts[parts.length - 1] || '';
+      
+      if (filename) {
+        // Remove file extension
+        const nameWithoutExt = filename.replace(/\.[^/.]+$/, '');
+        // Handle dotfiles (e.g., .gitignore -> show full name)
+        return nameWithoutExt || filename;
+      }
+      
+      // Fallback to asset type if no recognizable filename
+      return asset.type.toUpperCase();
+    }
+  }, [asset, clipId]);
+  
+  /**
+   * Get icon emoji based on asset type
+   * 
+   * @returns Emoji representing the asset type
+   */
+  const getAssetTypeIcon = useCallback((): string => {
+    if (!asset) return '📄';
+    
+    switch (asset.type) {
+      case 'video':
+        return '🎬';
+      case 'audio':
+        return '🎵';
+      case 'image':
+        return '🖼️';
+      default:
+        return '📄';
+    }
+  }, [asset]);
+
+  // Memoize visual calculations to avoid recalculation on every render
+  const width = useMemo(
+    () => (clip.timelineEnd - clip.timelineStart) * pixelsPerFrame,
+    [clip.timelineStart, clip.timelineEnd, pixelsPerFrame]
+  );
+  
+  const left = useMemo(
+    () => clip.timelineStart * pixelsPerFrame,
+    [clip.timelineStart, pixelsPerFrame]
+  );
 
   const applySnapping = (proposedFrame: Frame): Frame => {
     if (!snappingEnabled) {
@@ -115,8 +201,9 @@ export function Clip({
 
     let lastValidStart = dragStartFrame.current;
     let lastValidEnd = dragStartEnd.current;
+    let rafId: number | null = null;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const performDragOperation = (e: MouseEvent) => {
       const deltaX = e.clientX - dragStartX.current;
       const deltaY = e.clientY - dragStartY.current;
       const deltaFrames = Math.round(deltaX / pixelsPerFrame);
@@ -167,8 +254,13 @@ export function Clip({
               // Use appropriate move method based on editing mode
               if (editingMode === 'normal') {
                 engine.moveClip(clipId, snappedStart);
+              } else if (editingMode === 'ripple') {
+                // Use core rippleMove operation for atomic transaction
+                engine.rippleMove(clipId, snappedStart);
+              } else if (editingMode === 'insert') {
+                // Use core insertMove operation for atomic transaction
+                engine.insertMove(clipId, snappedStart);
               }
-              // TODO: Implement ripple and insert modes when engine methods are available
               
               lastValidStart = snappedStart;
             }
@@ -177,6 +269,15 @@ export function Clip({
       } catch (error) {
         // Validation error - clip can't be moved/resized there
         console.warn('Cannot perform operation:', error);
+      }
+      
+      rafId = null;
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Throttle with requestAnimationFrame to prevent excessive updates
+      if (rafId === null) {
+        rafId = requestAnimationFrame(() => performDragOperation(e));
       }
     };
 
@@ -210,6 +311,11 @@ export function Clip({
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      
+      // Cancel any pending RAF to prevent memory leaks
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
     };
   }, [isDragging, dragMode, clipId, pixelsPerFrame, clip, engine, snappingEnabled, editingMode, playhead, onDrag, onDragEnd, onSnapIndicator, isLocked, onRequestTrackAtY]);
 
@@ -244,13 +350,25 @@ export function Clip({
 
       {/* Clip content */}
       <div
-        className={`absolute inset-0 px-2 py-1 ${
+        className={`absolute inset-0 px-2 py-1 overflow-hidden ${
           isLocked ? 'cursor-not-allowed' : isDragging && dragMode === 'move' ? 'cursor-grabbing' : 'cursor-grab'
         }`}
         onMouseDown={(e) => handleMouseDown(e, 'move')}
       >
-        <div className="text-xs text-white truncate">
-          Clip {clipId.slice(0, 8)}
+        <div className="flex items-center gap-1 h-full">
+          <span className="text-sm" title={asset?.type || 'Unknown type'}>
+            {getAssetTypeIcon()}
+          </span>
+          <div className="flex-1 min-w-0">
+            <div className="text-xs text-white truncate font-medium" title={getAssetDisplayName()}>
+              {getAssetDisplayName()}
+            </div>
+            {asset && width > 80 && (
+              <div className="text-[10px] text-blue-200 truncate">
+                {asset.type} • {clip.timelineEnd - clip.timelineStart}f
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

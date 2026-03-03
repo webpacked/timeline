@@ -1,87 +1,93 @@
 /**
- * TIMELINE MODEL
- * 
- * The Timeline is the root container for the entire editing project.
- * 
- * WHAT IS A TIMELINE?
- * - The top-level data structure for a project
- * - Contains all tracks (which contain all clips)
- * - Defines the frame rate (FPS) for the entire project
- * - Defines the total duration of the project
- * 
- * WHY A TIMELINE?
- * - Single source of truth for all timeline data
- * - Defines the temporal bounds of the project
- * - Provides a consistent frame rate for all time calculations
- * 
- * EXAMPLE:
- * ```typescript
- * const timeline: Timeline = {
- *   id: 'timeline_1',
- *   name: 'My Project',
- *   fps: frameRate(30),
- *   duration: frame(9000),  // 5 minutes at 30fps
- *   tracks: [],
- * };
- * ```
- * 
- * INVARIANTS:
- * - FPS is immutable after timeline creation
- * - Duration must be positive
- * - All tracks must have unique IDs
+ * TIMELINE MODEL — Phase 0 + Phase 3
  */
 
-import { Frame, FrameRate } from './frame';
-import { Track } from './track';
+import type { TimelineFrame, FrameRate, Timecode } from './frame';
+import type { Track } from './track';
+import type { Marker, BeatGrid } from './marker';
+import type { TrackGroup } from './track-group';
+import type { LinkGroup } from './link-group';
 
-/**
- * Timeline - The root container for a timeline project
- */
-export interface Timeline {
-  /** Unique identifier */
-  id: string;
-  
-  /** Human-readable name */
-  name: string;
-  
-  /** Frames per second (immutable after creation) */
-  fps: FrameRate;
-  
-  /** Total duration of the timeline in frames */
-  duration: Frame;
-  
-  /** Tracks in the timeline (ordered bottom-to-top) */
-  tracks: Track[];
-  
-  /** Optional metadata for custom use cases */
-  metadata?: Record<string, unknown>;
-}
+// ---------------------------------------------------------------------------
+// SequenceSettings
+// ---------------------------------------------------------------------------
 
-/**
- * Create a new timeline
- * 
- * @param params - Timeline parameters
- * @returns A new Timeline object
- */
+export type SequenceSettings = {
+  readonly pixelAspectRatio: number;
+  readonly fieldOrder: 'progressive' | 'upper' | 'lower';
+  readonly colorSpace: string;
+  readonly audioSampleRate: number;
+  readonly audioChannelCount: number;
+};
+
+// ---------------------------------------------------------------------------
+// Timeline
+// ---------------------------------------------------------------------------
+
+export type Timeline = {
+  readonly id: string;
+  readonly name: string;
+  readonly fps: FrameRate;
+  readonly duration: TimelineFrame;
+  readonly startTimecode: Timecode;
+  readonly tracks: readonly Track[];
+  readonly sequenceSettings: SequenceSettings;
+  /**
+   * Increments by 1 on every successfully committed Transaction.
+   * Use this to detect stale references without deep equality checks.
+   */
+  readonly version: number;
+  // — Phase 3 —
+  readonly markers: readonly Marker[];
+  readonly beatGrid: BeatGrid | null;
+  readonly inPoint: TimelineFrame | null;
+  readonly outPoint: TimelineFrame | null;
+  // — Phase 4 —
+  readonly trackGroups?: readonly TrackGroup[];
+  readonly linkGroups?: readonly LinkGroup[];
+};
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
+const DEFAULT_SEQUENCE_SETTINGS: SequenceSettings = {
+  pixelAspectRatio: 1,
+  fieldOrder: 'progressive',
+  colorSpace: 'sRGB',
+  audioSampleRate: 48000,
+  audioChannelCount: 2,
+};
+
 export function createTimeline(params: {
   id: string;
   name: string;
   fps: FrameRate;
-  duration: Frame;
-  tracks?: Track[];
-  metadata?: Record<string, unknown>;
+  duration: TimelineFrame;
+  startTimecode?: Timecode;
+  tracks?: readonly Track[];
+  sequenceSettings?: Partial<SequenceSettings>;
+  markers?: readonly Marker[];
+  beatGrid?: BeatGrid | null;
+  inPoint?: TimelineFrame | null;
+  outPoint?: TimelineFrame | null;
+  trackGroups?: readonly TrackGroup[];
+  linkGroups?: readonly LinkGroup[];
 }): Timeline {
-  const timeline: Timeline = {
+  return {
     id: params.id,
     name: params.name,
     fps: params.fps,
     duration: params.duration,
+    startTimecode: params.startTimecode ?? ('00:00:00:00' as Timecode),
     tracks: params.tracks ?? [],
+    sequenceSettings: { ...DEFAULT_SEQUENCE_SETTINGS, ...params.sequenceSettings },
+    version: 0,
+    markers: params.markers ?? [],
+    beatGrid: params.beatGrid ?? null,
+    inPoint: params.inPoint ?? null,
+    outPoint: params.outPoint ?? null,
+    ...(params.trackGroups !== undefined && { trackGroups: params.trackGroups }),
+    ...(params.linkGroups !== undefined && { linkGroups: params.linkGroups }),
   };
-  
-  if (params.metadata !== undefined) {
-    timeline.metadata = params.metadata;
-  }
-  
-  return timeline;
 }

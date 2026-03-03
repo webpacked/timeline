@@ -22,8 +22,8 @@
  * ```
  */
 
-import type { Frame, FrameRate } from '../types/frame';
-import { frame } from '../types/frame';
+import type { TimelineFrame as Frame, FrameRate } from '../types/frame';
+import { toFrame as frame } from '../types/frame';
 
 /**
  * Convert frames to seconds
