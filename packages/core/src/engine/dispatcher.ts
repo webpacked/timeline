@@ -1,144 +1,71 @@
 /**
- * DISPATCH ORCHESTRATION
- * 
- * Coordinates operation execution, validation, and history management.
- * 
- * WHAT IS THE DISPATCHER?
- * - Executes operations on state
- * - Validates the resulting state
- * - Commits valid states to history
- * - Rejects invalid states with errors
- * 
- * WHY A DISPATCHER?
- * - Enforces validation before mutation
- * - Prevents invalid states from entering history
- * - Provides consistent error handling
- * - Separates concerns (operations vs validation vs history)
- * 
- * CRITICAL FLOW:
- * 1. Execute operation (pure function)
- * 2. Validate resulting state
- * 3. If valid: push to history, return success
- * 4. If invalid: return errors, state unchanged
- * 
- * USAGE:
- * ```typescript
- * const result = dispatch(history, (state) => addClip(state, trackId, clip));
- * if (result.success) {
- *   history = result.history;
- * } else {
- *   console.error('Operation failed:', result.errors);
- * }
- * ```
+ * DISPATCHER — Phase 0 compliant
+ *
+ * The ONLY entry point for mutating TimelineState.
+ * Validates first, applies atomically, checks invariants.
+ *
+ * Algorithm:
+ * 1. For each operation: run per-primitive validator → reject immediately on failure
+ * 2. Apply all operations sequentially to get proposedState
+ * 3. Run checkInvariants(proposedState) → reject on any violation
+ * 4. Bump timeline.version by 1 and return accepted
+ *
+ * RULE: If one primitive fails, zero primitives are applied.
  */
 
-import { HistoryState, pushHistory, getCurrentState } from './history';
-import { TimelineState } from '../types/state';
-import { ValidationError } from '../types/validation';
-import { validateTimeline } from '../systems/validation';
+import type { TimelineState } from '../types/state';
+import type {
+  Transaction,
+  DispatchResult,
+} from '../types/operations';
+import { applyOperation } from './apply';
+import { checkInvariants } from '../validation/invariants';
+import { validateOperation } from '../validation/validators';
 
-/**
- * Operation - A pure function that transforms timeline state
- */
-export type Operation = (state: TimelineState) => TimelineState;
+// ---------------------------------------------------------------------------
+// dispatch
+// ---------------------------------------------------------------------------
 
-/**
- * DispatchResult - The result of a dispatch operation
- * 
- * Contains:
- * - success: Whether the operation succeeded
- * - history: Updated history (if success) or unchanged (if failure)
- * - errors: Validation errors (if failure)
- */
-export interface DispatchResult {
-  /** Whether the operation succeeded */
-  success: boolean;
-  
-  /** Updated history state */
-  history: HistoryState;
-  
-  /** Validation errors (if operation failed) */
-  errors?: ValidationError[];
-}
-
-/**
- * Dispatch an operation
- * 
- * Executes the operation, validates the result, and commits to history
- * if valid. Returns errors if validation fails.
- * 
- * @param history - Current history state
- * @param operation - Operation to execute
- * @returns Dispatch result with success status and updated history
- */
-export function dispatch(history: HistoryState, operation: Operation): DispatchResult {
-  // Get current state
-  const currentState = getCurrentState(history);
-  
-  let newState: TimelineState;
-  
-  try {
-    // Execute operation
-    newState = operation(currentState);
-  } catch (error) {
-    // Operation threw an error, convert to validation error
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      history, // Return unchanged history
-      errors: [{
-        code: 'OPERATION_ERROR',
-        message: errorMessage,
-      }],
-    };
-  }
-  
-  // Validate resulting state
-  const validationResult = validateTimeline(newState);
-  
-  if (!validationResult.valid) {
-    // Validation failed, return errors
-    return {
-      success: false,
-      history, // Return unchanged history
-      errors: validationResult.errors,
-    };
-  }
-  
-  // Validation passed, commit to history
-  const newHistory = pushHistory(history, newState);
-  
-  return {
-    success: true,
-    history: newHistory,
-  };
-}
-
-/**
- * Dispatch multiple operations as a batch
- * 
- * Executes all operations in sequence. If any operation fails validation,
- * the entire batch is rejected and state remains unchanged.
- * 
- * This is useful for atomic operations that must all succeed or all fail.
- * 
- * @param history - Current history state
- * @param operations - Array of operations to execute
- * @returns Dispatch result with success status and updated history
- */
-export function dispatchBatch(
-  history: HistoryState,
-  operations: Operation[]
+export function dispatch(
+  state: TimelineState,
+  transaction: Transaction,
 ): DispatchResult {
-  // Compose all operations into a single operation
-  const composedOperation: Operation = (state) => {
-    let currentState = state;
-    for (const operation of operations) {
-      currentState = operation(currentState);
+  // Step 1 + Step 2: Validate each operation against the rolling state, then apply it.
+  // Validating against rolling state is necessary for compound transactions like
+  //   [ DELETE_CLIP, INSERT_CLIP(left), INSERT_CLIP(right) ]
+  // where INSERT_CLIP validation must see the post-DELETE state (original clip gone).
+  // If any op fails validation, we return immediately — zero ops have been committed.
+  let proposedState = state;
+  for (const op of transaction.operations) {
+    const rejection = validateOperation(proposedState, op);
+    if (rejection) {
+      return {
+        accepted: false,
+        reason: rejection.reason,
+        message: rejection.message,
+      };
     }
-    return currentState;
+    proposedState = applyOperation(proposedState, op);
+  }
+
+  // Step 3: Run InvariantChecker on the full proposed state
+  const violations = checkInvariants(proposedState);
+  if (violations.length > 0) {
+    return {
+      accepted: false,
+      reason: 'INVARIANT_VIOLATED',
+      message: violations.map((v) => v.message).join('; '),
+    };
+  }
+
+  // Step 4: Commit — bump version
+  const nextState: TimelineState = {
+    ...proposedState,
+    timeline: {
+      ...proposedState.timeline,
+      version: state.timeline.version + 1,
+    },
   };
-  
-  // Dispatch the composed operation
-  return dispatch(history, composedOperation);
+
+  return { accepted: true, nextState };
 }

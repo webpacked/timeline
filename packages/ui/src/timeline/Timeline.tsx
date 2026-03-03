@@ -3,6 +3,7 @@ import { TimeRuler } from './TimeRuler';
 import { Track } from './Track';
 import { frame, type Frame } from '@timeline/core';
 import { useState, useEffect, useRef } from 'react';
+import { useTimelineUI, TimelineUIProvider, type TimelineUIProviderProps } from '../context/TimelineUIContext';
 
 interface TimelineProps {
   className?: string;
@@ -10,20 +11,25 @@ interface TimelineProps {
   onClipResize?: (clipId: string, newStart: Frame, newEnd: Frame) => void;
 }
 
-export function Timeline({ className = '', onClipMove, onClipResize }: TimelineProps) {
+/**
+ * Internal Timeline component that uses TimelineUIContext
+ */
+function TimelineInner({ className = '', onClipMove, onClipResize }: TimelineProps) {
   const { state } = useTimeline();
   const engine = useEngine();
-  const [pixelsPerFrame, setPixelsPerFrame] = useState(1);
-  const [snappingEnabled, setSnappingEnabled] = useState(true);
-  const [editingMode, setEditingMode] = useState<'normal' | 'ripple' | 'insert'>('normal');
+  const { state: uiState, actions: uiActions } = useTimelineUI();
+  
+  // Local state that doesn't belong in context
   const [snapIndicator, setSnapIndicator] = useState<Frame | null>(null);
-  const [playhead, setPlayhead] = useState<Frame>(frame(0));
-  const [selectedClipIds, setSelectedClipIds] = useState<Set<string>>(new Set());
   const [copiedClips, setCopiedClips] = useState<Array<{clipId: string, trackId: string}>>([]);
   const [isDraggingPlayhead, setIsDraggingPlayhead] = useState(false);
   const timelineRef = useRef<HTMLDivElement>(null);
 
   const { timeline } = state;
+  
+  // Destructure UI state and actions for convenience
+  const { playhead, zoom: pixelsPerFrame, snappingEnabled, editingMode, selectedClipIds } = uiState;
+  const { setPlayhead, setZoom: setPixelsPerFrame, setSnappingEnabled, setEditingMode, setSelectedClipIds } = uiActions;
 
   // Keyboard handler for playhead movement, clip selection, deletion, copy/paste, and undo/redo
   useEffect(() => {
@@ -80,7 +86,7 @@ export function Timeline({ className = '', onClipMove, onClipResize }: TimelineP
               console.warn('Failed to delete clip:', error);
             }
           });
-          setSelectedClipIds(new Set());
+          uiActions.clearSelection();
           break;
         case 'c':
           if (e.metaKey || e.ctrlKey) {
@@ -133,13 +139,13 @@ export function Timeline({ className = '', onClipMove, onClipResize }: TimelineP
                 allClipIds.add(clip.id);
               });
             });
-            setSelectedClipIds(allClipIds);
+            uiActions.setSelectedClipIds(allClipIds);
           }
           break;
         case 'Escape':
           e.preventDefault();
           // Deselect all
-          setSelectedClipIds(new Set());
+          uiActions.clearSelection();
           break;
         case 'm':
         case 'M':
@@ -206,15 +212,7 @@ export function Timeline({ className = '', onClipMove, onClipResize }: TimelineP
   const handleClipClick = (clipId: string, multiSelect: boolean) => {
     if (multiSelect) {
       // Toggle selection
-      setSelectedClipIds(prev => {
-        const newSet = new Set(prev);
-        if (newSet.has(clipId)) {
-          newSet.delete(clipId);
-        } else {
-          newSet.add(clipId);
-        }
-        return newSet;
-      });
+      uiActions.toggleClipSelection(clipId);
     } else {
       // Single selection
       setSelectedClipIds(new Set([clipId]));
@@ -534,5 +532,44 @@ export function Timeline({ className = '', onClipMove, onClipResize }: TimelineP
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Timeline component with built-in UI state management
+ * 
+ * This component wraps TimelineInner with TimelineUIProvider to manage
+ * UI state (playhead, zoom, snapping, selection, editing mode).
+ * 
+ * The UI state is separate from the engine state and is accessible
+ * to external components via useTimelineUI() hook.
+ */
+export interface TimelineComponentProps extends TimelineProps {
+  /** Initial playhead position (default: frame(0)) */
+  initialPlayhead?: Frame;
+  /** Initial zoom level in pixels per frame (default: 1) */
+  initialZoom?: number;
+  /** Initial snapping state (default: true) */
+  initialSnappingEnabled?: boolean;
+  /** Initial editing mode (default: 'normal') */
+  initialEditingMode?: 'normal' | 'ripple' | 'insert';
+}
+
+export function Timeline({
+  initialPlayhead,
+  initialZoom,
+  initialSnappingEnabled,
+  initialEditingMode,
+  ...timelineProps
+}: TimelineComponentProps) {
+  return (
+    <TimelineUIProvider
+      initialPlayhead={initialPlayhead}
+      initialZoom={initialZoom}
+      initialSnappingEnabled={initialSnappingEnabled}
+      initialEditingMode={initialEditingMode}
+    >
+      <TimelineInner {...timelineProps} />
+    </TimelineUIProvider>
   );
 }

@@ -1,125 +1,88 @@
 /**
- * TRACK MODEL
- * 
- * A Track is a horizontal container for Clips.
- * 
- * WHAT IS A TRACK?
- * - A layer that holds clips (like a layer in Photoshop)
- * - Provides organization and isolation for clips
- * - Has a type (video or audio) that clips must match
- * 
- * WHY TRACKS?
- * - Organize clips into layers
- * - Enable stacking and compositing (track order matters)
- * - Provide track-level controls (mute, lock)
- * - Isolate editing operations
- * 
- * TRACK ORDER:
- * Tracks are rendered bottom-to-top:
- * - tracks[0] = bottom layer (rendered first)
- * - tracks[n] = top layer (rendered last, appears on top)
- * 
- * EXAMPLE:
- * ```typescript
- * const track: Track = {
- *   id: 'track_1',
- *   name: 'Video Track 1',
- *   type: 'video',
- *   clips: [],
- *   locked: false,
- *   muted: false,
- * };
- * ```
- * 
- * INVARIANTS:
- * - Clips on a track must not overlap
- * - All clips must match the track type
- * - Clips array should be sorted by timelineStart (for performance)
+ * TRACK MODEL — Phase 0 + Phase 3
+ *
+ * A Track is a horizontal container for Clips, always sorted by timelineStart.
+ * Phase 3: captions[] for subtitle/caption items.
  */
 
-import { Clip } from './clip';
+import type { Clip } from './clip';
+import type { Caption } from './caption';
+import type { TrackGroupId } from './track-group';
 
-/**
- * TrackType - The kind of content this track holds
- */
-export type TrackType = 'video' | 'audio';
+// ---------------------------------------------------------------------------
+// Branded ID
+// ---------------------------------------------------------------------------
 
-/**
- * Track - A container for clips
- */
-export interface Track {
-  /** Unique identifier */
-  id: string;
-  
-  /** Human-readable name */
-  name: string;
-  
-  /** Type of content this track holds */
-  type: TrackType;
-  
-  /** Clips on this track (should be sorted by timelineStart) */
-  clips: Clip[];
-  
-  /** Whether the track is locked (prevents editing) */
-  locked: boolean;
-  
-  /** Whether the track is muted (affects playback) */
-  muted: boolean;
-  
-  /** Whether the track is soloed (mutes all other tracks) */
-  solo: boolean;
-  
-  /** Track height in pixels (for UI rendering) */
-  height: number;
-  
-  /** Optional metadata for custom use cases */
-  metadata?: Record<string, unknown>;
-}
+export type TrackId = string & { readonly __brand: 'TrackId' };
+export const toTrackId = (s: string): TrackId => s as TrackId;
 
-/**
- * Create a new track
- * 
- * @param params - Track parameters
- * @returns A new Track object
- */
+// ---------------------------------------------------------------------------
+// TrackType — must match Asset.mediaType for any clip placed on the track
+// ---------------------------------------------------------------------------
+
+export type TrackType = 'video' | 'audio' | 'subtitle' | 'title';
+
+// ---------------------------------------------------------------------------
+// Track
+// ---------------------------------------------------------------------------
+
+export type Track = {
+  readonly id: TrackId;
+  readonly name: string;
+  readonly type: TrackType;
+  readonly locked: boolean;
+  readonly muted: boolean;
+  readonly solo: boolean;
+  readonly height: number;
+  /** Always sorted ascending by timelineStart — invariant enforced by checkInvariants. */
+  readonly clips: readonly Clip[];
+  /** Phase 3: captions on this track (e.g. subtitle/title). */
+  readonly captions: readonly Caption[];
+  // — Phase 4 —
+  readonly blendMode?: string;
+  readonly opacity?: number;   // 0–1, default 1
+  readonly groupId?: TrackGroupId;
+};
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
 export function createTrack(params: {
   id: string;
   name: string;
   type: TrackType;
-  clips?: Clip[];
+  clips?: readonly Clip[];
+  captions?: readonly Caption[];
   locked?: boolean;
   muted?: boolean;
   solo?: boolean;
   height?: number;
-  metadata?: Record<string, unknown>;
+  blendMode?: string;
+  opacity?: number;
+  groupId?: TrackGroupId;
 }): Track {
-  const track: Track = {
-    id: params.id,
+  return {
+    id: params.id as TrackId,
     name: params.name,
     type: params.type,
     clips: params.clips ?? [],
+    captions: params.captions ?? [],
     locked: params.locked ?? false,
     muted: params.muted ?? false,
     solo: params.solo ?? false,
     height: params.height ?? 56,
+    ...(params.blendMode !== undefined && { blendMode: params.blendMode }),
+    ...(params.opacity !== undefined && { opacity: params.opacity }),
+    ...(params.groupId !== undefined && { groupId: params.groupId }),
   };
-  
-  if (params.metadata !== undefined) {
-    track.metadata = params.metadata;
-  }
-  
-  return track;
 }
 
-/**
- * Sort clips on a track by timeline start frame
- * 
- * This is useful for maintaining clip order and improving
- * query performance.
- * 
- * @param track - The track to sort
- * @returns A new track with sorted clips
- */
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Returns a new track with clips sorted ascending by timelineStart. */
 export function sortTrackClips(track: Track): Track {
   return {
     ...track,

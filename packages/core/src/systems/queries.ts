@@ -29,7 +29,7 @@
 import { TimelineState } from '../types/state';
 import { Clip, clipContainsFrame } from '../types/clip';
 import { Track } from '../types/track';
-import { Frame } from '../types/frame';
+import type { TimelineFrame as Frame } from '../types/frame';
 
 /**
  * Find a clip by ID
@@ -70,7 +70,7 @@ export function findTrackById(state: TimelineState, trackId: string): Track | un
  */
 export function getClipsOnTrack(state: TimelineState, trackId: string): Clip[] {
   const track = findTrackById(state, trackId);
-  return track ? track.clips : [];
+  return track ? Array.from(track.clips) : [];
 }
 
 /**
@@ -143,7 +143,7 @@ export function getAllClips(state: TimelineState): Clip[] {
  * @param state - Current timeline state
  * @returns Array of all tracks
  */
-export function getAllTracks(state: TimelineState): Track[] {
+export function getAllTracks(state: TimelineState): readonly Track[] {
   return state.timeline.tracks;
 }
 

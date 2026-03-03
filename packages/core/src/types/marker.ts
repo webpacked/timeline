@@ -1,56 +1,59 @@
 /**
- * MARKER TYPES
- * 
- * Pure metadata for timeline navigation and organization.
- * Markers do not affect clip timing or validation.
+ * MARKER TYPES — Phase 3
+ *
+ * Discriminated union: point (single frame) or range (frameStart..frameEnd).
+ * Markers live on Timeline.markers[]. linkedClipId moves with clip on ripple.
  */
 
-import { Frame } from './frame';
+import type { TimelineFrame } from './frame';
+import type { ClipId } from './clip';
 
-/**
- * Timeline marker - marks a specific frame on the timeline
- */
-export interface TimelineMarker {
-  id: string;
-  type: 'timeline';
-  frame: Frame;
-  label: string;
-  color?: string;
-}
+// ---------------------------------------------------------------------------
+// Branded ID
+// ---------------------------------------------------------------------------
 
-/**
- * Clip marker - marks a frame relative to clip start
- */
-export interface ClipMarker {
-  id: string;
-  type: 'clip';
-  clipId: string;
-  frame: Frame; // Relative to clip's timelineStart
-  label: string;
-  color?: string;
-}
+export type MarkerId = string & { readonly __brand: 'MarkerId' };
+export const toMarkerId = (s: string): MarkerId => s as MarkerId;
 
-/**
- * Region marker - marks a frame range
- */
-export interface RegionMarker {
-  id: string;
-  type: 'region';
-  startFrame: Frame;
-  endFrame: Frame;
-  label: string;
-  color?: string;
-}
+// ---------------------------------------------------------------------------
+// MarkerScope
+// ---------------------------------------------------------------------------
 
-/**
- * Work area - defines the active editing region
- */
-export interface WorkArea {
-  startFrame: Frame;
-  endFrame: Frame;
-}
+export type MarkerScope = 'global' | 'personal' | 'export';
 
-/**
- * Union type for all marker types
- */
-export type Marker = TimelineMarker | ClipMarker | RegionMarker;
+// ---------------------------------------------------------------------------
+// Marker — discriminated union (Option A)
+// ---------------------------------------------------------------------------
+
+export type Marker =
+  | {
+      readonly type: 'point';
+      readonly id: MarkerId;
+      readonly frame: TimelineFrame;
+      readonly label: string;
+      readonly color: string;
+      readonly scope: MarkerScope;
+      readonly linkedClipId: ClipId | null;
+      readonly clipId?: ClipId;
+    }
+  | {
+      readonly type: 'range';
+      readonly id: MarkerId;
+      readonly frameStart: TimelineFrame;
+      readonly frameEnd: TimelineFrame;
+      readonly label: string;
+      readonly color: string;
+      readonly scope: MarkerScope;
+      readonly linkedClipId: ClipId | null;
+      readonly clipId?: ClipId;
+    };
+
+// ---------------------------------------------------------------------------
+// BeatGrid — timeline-level, generates snap points
+// ---------------------------------------------------------------------------
+
+export type BeatGrid = {
+  readonly bpm: number;
+  readonly timeSignature: readonly [number, number];
+  readonly offset: TimelineFrame;
+};

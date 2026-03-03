@@ -8,9 +8,9 @@
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "changeset": "changeset",
-    "changeset:version": "changeset version",
-    "changeset:publish": "changeset publish"
+    "changeset":        "changeset",
+    "version-packages": "changeset version",
+    "release":          "pnpm build --recursive && changeset publish"
   },
   "keywords": [],
   "author": "",
