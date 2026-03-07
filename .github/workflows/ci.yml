@@ -1,0 +1,33 @@
+# .github/workflows/ci.yml
+name: CI
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [dev, main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        # Uses packageManager from package.json (pnpm@10.28.2)
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm --filter @webpacked-timeline/core exec tsc --noEmit
+
+      - name: Test
+        run: pnpm --filter @webpacked-timeline/core test --run
+
+      - name: Build
+        run: pnpm --filter @webpacked-timeline/core build

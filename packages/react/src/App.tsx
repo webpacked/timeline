@@ -1,35 +1,90 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+/**
+ * Minimal Timeline Example
+ *
+ * Uses Phase R TimelineEngine with options-based constructor.
+ * For a full demo with @webpacked-timeline/ui, see apps/demo/
+ */
+
+import {
+  createTimeline,
+  createTimelineState,
+  createTrack,
+  createClip,
+  createAsset,
+  toFrame,
+  frameRate,
+} from '@webpacked-timeline/core';
+import { TimelineEngine } from './engine';
+import { TimelineProvider } from './index';
+
+const timeline = createTimeline({
+  id: 'tl-1',
+  name: 'Example Timeline',
+  fps: frameRate(30),
+  duration: toFrame(3000),
+  tracks: [],
+});
+
+const videoTrack = createTrack({
+  id: 'track-v1',
+  name: 'Video Track 1',
+  type: 'video',
+  locked: false,
+  clips: [],
+});
+
+const videoAsset = createAsset({
+  id: 'asset-v1',
+  name: 'Sample Video',
+  mediaType: 'video',
+  filePath: '/sample.mp4',
+  intrinsicDuration: toFrame(300),
+  nativeFps: frameRate(30),
+  sourceTimecodeOffset: toFrame(0),
+});
+
+const videoClip = createClip({
+  id: 'clip-1',
+  assetId: videoAsset.id,
+  trackId: videoTrack.id,
+  timelineStart: toFrame(0),
+  timelineEnd: toFrame(300),
+  mediaIn: toFrame(0),
+  mediaOut: toFrame(300),
+  effects: [],
+});
+
+const timelineWithTrack = createTimeline({
+  ...timeline,
+  tracks: [
+    createTrack({
+      ...videoTrack,
+      clips: [videoClip],
+    }),
+  ],
+});
+
+const initialState = createTimelineState({
+  timeline: timelineWithTrack,
+  assetRegistry: new Map([[videoAsset.id, videoAsset]]),
+});
+
+const engine = new TimelineEngine({ initialState });
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <TimelineProvider engine={engine}>
+      <div className="h-screen flex flex-col">
+        <header className="bg-zinc-900 text-white p-4 border-b border-zinc-700">
+          <h1 className="text-xl font-bold">Timeline Example</h1>
+          <p className="text-sm text-zinc-400">
+            Phase R engine — for full UI use apps/demo with @webpacked-timeline/ui
+          </p>
+        </header>
+        <main className="flex-1 overflow-hidden" />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </TimelineProvider>
+  );
 }
 
-export default App
+export default App;
