@@ -1,10 +1,10 @@
 /* ═══════════════════════════════════════════════════════════
-   @timeline/ui — DaVinci Resolve Theme
+   @webpacked-timeline/ui — DaVinci Resolve Theme
    
    Imports base tokens and applies DaVinci-specific overrides.
    Import this file to get the full DaVinci look:
    
-     import '@timeline/ui/styles/davinci';
+     import '@webpacked-timeline/ui/styles/davinci';
    ═══════════════════════════════════════════════════════════ */
 
 @import './tokens.css';

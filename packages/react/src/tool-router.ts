@@ -26,7 +26,7 @@ import type {
   ClipId,
   TimelineFrame,
   TimelineState,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // ---------------------------------------------------------------------------
 // Public types

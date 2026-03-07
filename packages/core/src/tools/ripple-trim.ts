@@ -23,7 +23,7 @@
  *   3. Frame-0: for START trim, leftward shift must not push any left-clip below frame 0
  *
  * RULES:
- *   - Zero imports from React, DOM, @timeline/react, @timeline/ui
+ *   - Zero imports from React, DOM, @webpacked-timeline/react, @webpacked-timeline/ui
  *   - onPointerMove never dispatches
  *   - onPointerUp never mutates instance state
  *   - Every instance variable appears in onCancel()

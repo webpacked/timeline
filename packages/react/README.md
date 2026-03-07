@@ -1,6 +1,6 @@
-# @timeline/react
+# @webpacked-timeline/react
 
-React adapter for `@timeline/core`. Provides `TimelineEngine`, hooks, context, and tool routing for building timeline editors.
+React adapter for `@webpacked-timeline/core`. Provides `TimelineEngine`, hooks, context, and tool routing for building timeline editors.
 
 ## Install
 
@@ -83,7 +83,7 @@ For use without context: `useTimelineWithEngine(engine)`, `useTrackIdsWithEngine
 ## Tool Routing
 
 ```tsx
-import { useToolRouter } from '@timeline/react';
+import { useToolRouter } from '@webpacked-timeline/react';
 
 const handlers = useToolRouter(engine, {
   getPixelsPerFrame: () => ppf,

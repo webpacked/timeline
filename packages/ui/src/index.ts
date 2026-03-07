@@ -1,11 +1,11 @@
 /**
- * @timeline/ui — Public API
+ * @webpacked-timeline/ui — Public API
  *
  * DaVinci Resolve–style timeline editor components.
  *
  * Quick start:
- *   import { DaVinciEditor } from '@timeline/ui';
- *   import '@timeline/ui/styles/davinci';
+ *   import { DaVinciEditor } from '@webpacked-timeline/ui';
+ *   import '@webpacked-timeline/ui/styles/davinci';
  *
  *   <DaVinciEditor engine={engine} style={{ height: '100vh' }} />
  */

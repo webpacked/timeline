@@ -6,8 +6,8 @@
  * coordination, pointer/keyboard handling, and scroll sync.
  *
  * Usage:
- *   import { DaVinciEditor } from '@timeline/ui';
- *   import '@timeline/ui/styles/davinci';
+ *   import { DaVinciEditor } from '@webpacked-timeline/ui';
+ *   import '@webpacked-timeline/ui/styles/davinci';
  *
  *   <DaVinciEditor
  *     engine={engine}
@@ -31,8 +31,8 @@ import {
   useMarkers,
   useTrackWithEngine,
   useClips,
-} from '@timeline/react';
-import type { TimelineEngine } from '@timeline/react';
+} from '@webpacked-timeline/react';
+import type { TimelineEngine } from '@webpacked-timeline/react';
 import type {
   TimelinePointerEvent,
   TimelineKeyEvent,
@@ -40,8 +40,8 @@ import type {
   ClipId,
   TrackId,
   ProvisionalState,
-} from '@timeline/core';
-import { toFrame, createTrack, toTrackId, createClip, toAssetId, createAsset, frameRate } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import { toFrame, createTrack, toTrackId, createClip, toAssetId, createAsset, frameRate } from '@webpacked-timeline/core';
 import { TimelineProvider, useTimelineContext } from '../../context/timeline-context';
 import { DaVinciToolbar } from './davinci-toolbar';
 import { DaVinciRuler } from './davinci-ruler';

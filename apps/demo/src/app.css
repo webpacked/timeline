@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-/* ── @timeline/ui DaVinci Resolve design tokens ── */
+/* ── @webpacked-timeline/ui DaVinci Resolve design tokens ── */
 @theme {
   /* Track */
   --color-tl-track-video: hsl(220 15% 14%);

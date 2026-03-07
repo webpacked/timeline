@@ -36,8 +36,8 @@ import {
   toTrackId,
   toClipId,
   toAssetId,
-} from '@timeline/core';
-import type { TimelinePointerEvent, TimelineKeyEvent, Modifiers } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { TimelinePointerEvent, TimelineKeyEvent, Modifiers } from '@webpacked-timeline/core';
 
 import { TimelineEngine } from '../index';
 

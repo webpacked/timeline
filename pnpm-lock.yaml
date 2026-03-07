@@ -17,13 +17,13 @@ importers:
 
   apps/demo:
     dependencies:
-      '@timeline/core':
+      '@webpacked-timeline/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@timeline/react':
+      '@webpacked-timeline/react':
         specifier: workspace:*
         version: link:../../packages/react
-      '@timeline/ui':
+      '@webpacked-timeline/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       react:
@@ -78,7 +78,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@timeline/core':
+      '@webpacked-timeline/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -118,12 +118,6 @@ importers:
 
   packages/ui:
     devDependencies:
-      '@timeline/core':
-        specifier: workspace:*
-        version: link:../core
-      '@timeline/react':
-        specifier: workspace:*
-        version: link:../react
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.35
@@ -133,6 +127,12 @@ importers:
       '@types/react-dom':
         specifier: ^18.0.0
         version: 18.3.7(@types/react@18.3.28)
+      '@webpacked-timeline/core':
+        specifier: workspace:*
+        version: link:../core
+      '@webpacked-timeline/react':
+        specifier: workspace:*
+        version: link:../react
       react:
         specifier: ^18.3.1
         version: 18.3.1

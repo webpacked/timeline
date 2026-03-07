@@ -9,10 +9,10 @@
 1. [Overview](#overview)
 2. [Monorepo Structure](#monorepo-structure)
 3. [Package Dependency Graph](#package-dependency-graph)
-4. [Core Package (`@timeline/core`)](#core-package)
-5. [React Adapter (`@timeline/react`)](#react-adapter)
-6. [UI Package (`@timeline/ui`)](#ui-package)
-7. [Demo Application (`@timeline/demo-app`)](#demo-application)
+4. [Core Package (`@webpacked-timeline/core`)](#core-package)
+5. [React Adapter (`@webpacked-timeline/react`)](#react-adapter)
+6. [UI Package (`@webpacked-timeline/ui`)](#ui-package)
+7. [Demo Application (`@webpacked-timeline/demo-app`)](#demo-application)
 8. [Data Flow: Top to Bottom](#data-flow-top-to-bottom)
 9. [Type System](#type-system)
 10. [Tool System](#tool-system)
@@ -31,10 +31,10 @@ This is a **framework-agnostic, deterministic, frame-based timeline editing kern
 
 | Layer | Package | Responsibility |
 |-------|---------|---------------|
-| **Data Layer** | `@timeline/core` | Pure state, dispatch, tools, history, validation, serialization |
-| **Adapter Layer** | `@timeline/react` | React integration: engine orchestrator, hooks, tool routing, context |
-| **Presentation Layer** | `@timeline/ui` | Visual components: tracks, clips, ruler, toolbar, playhead |
-| **Application Layer** | `@timeline/demo-app` | Demo app composing all layers into a working timeline editor |
+| **Data Layer** | `@webpacked-timeline/core` | Pure state, dispatch, tools, history, validation, serialization |
+| **Adapter Layer** | `@webpacked-timeline/react` | React integration: engine orchestrator, hooks, tool routing, context |
+| **Presentation Layer** | `@webpacked-timeline/ui` | Visual components: tracks, clips, ruler, toolbar, playhead |
+| **Application Layer** | `@webpacked-timeline/demo-app` | Demo app composing all layers into a working timeline editor |
 
 ### Key Architectural Principles
 
@@ -53,10 +53,10 @@ This is a **framework-agnostic, deterministic, frame-based timeline editing kern
 ```
 timeline/
 ├── packages/
-│   ├── core/          → @timeline/core      (pure TypeScript engine)
-│   ├── react/         → @timeline/react     (React adapter layer)
-│   ├── ui/            → @timeline/ui        (UI components)
-│   └── demo/          → @timeline/demo-app  (working demo application)
+│   ├── core/          → @webpacked-timeline/core      (pure TypeScript engine)
+│   ├── react/         → @webpacked-timeline/react     (React adapter layer)
+│   ├── ui/            → @webpacked-timeline/ui        (UI components)
+│   └── demo/          → @webpacked-timeline/demo-app  (working demo application)
 ├── apps/
 │   └── demo/          → Integration test demo (deprecated)
 ├── turbo.json         → Turborepo build config
@@ -71,26 +71,26 @@ timeline/
 ```
 ┌─────────────────────────────────────────────┐
 │                 Application                  │
-│              @timeline/demo-app              │
+│              @webpacked-timeline/demo-app              │
 │    (composes all layers into working app)    │
 └────────────┬───────────────┬────────────────┘
              │               │
              ▼               ▼
 ┌────────────────┐  ┌────────────────────────┐
-│  @timeline/ui  │  │   (custom components)  │
+│  @webpacked-timeline/ui  │  │   (custom components)  │
 │  (components)  │  │   built per-app        │
 └───────┬────────┘  └──────────┬─────────────┘
         │                      │
         ▼                      ▼
 ┌─────────────────────────────────────────────┐
-│             @timeline/react                  │
+│             @webpacked-timeline/react                  │
 │  TimelineEngine · Hooks · ToolRouter ·       │
 │  TimelineProvider · useSyncExternalStore      │
 └────────────────────┬────────────────────────┘
                      │
                      ▼
 ┌─────────────────────────────────────────────┐
-│             @timeline/core                   │
+│             @webpacked-timeline/core                   │
 │  dispatch · TimelineState · Tools · History  │
 │  Snap · Playback · Serialization · Invariants│
 └─────────────────────────────────────────────┘

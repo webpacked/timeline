@@ -21,10 +21,10 @@
     "noFallthroughCasesInSwitch": true,
 
     "paths": {
-      "@timeline/core": ["../../packages/core/src/public-api.ts"],
-      "@timeline/react": ["../../packages/react/src/index.ts"],
-      "@timeline/ui": ["../../packages/ui/src/index.ts"],
-      "@timeline/ui/styles/*": ["../../packages/ui/src/*.css"]
+      "@webpacked-timeline/core": ["../../packages/core/src/public-api.ts"],
+      "@webpacked-timeline/react": ["../../packages/react/src/index.ts"],
+      "@webpacked-timeline/ui": ["../../packages/ui/src/index.ts"],
+      "@webpacked-timeline/ui/styles/*": ["../../packages/ui/src/*.css"]
     }
   },
   "include": ["src"],

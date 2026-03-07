@@ -3,18 +3,18 @@
 
 ---
 
-# COMPONENTS — @timeline/ui Rules
+# COMPONENTS — @webpacked-timeline/ui Rules
 
 ## Critical Rule
 
-**No component imports from `@timeline/core` directly.** No component calls `dispatch()` directly. State flows in through hooks only.
+**No component imports from `@webpacked-timeline/core` directly.** No component calls `dispatch()` directly. State flows in through hooks only.
 
 ```typescript
 // ❌ WRONG
-import { dispatch, findClipById } from "@timeline/core";
+import { dispatch, findClipById } from "@webpacked-timeline/core";
 
 // ✅ CORRECT
-import { useClip, useTimeline } from "@timeline/react";
+import { useClip, useTimeline } from "@webpacked-timeline/react";
 ```
 
 ---
@@ -102,7 +102,7 @@ function TrackRow({ id }: { id: TrackId }) {
 
 ## What Components Do NOT Do
 
-- ❌ Import from `@timeline/core` directly
+- ❌ Import from `@webpacked-timeline/core` directly
 - ❌ Call `dispatch()` directly
 - ❌ Implement drag logic (that belongs in `packages/react/tools/`)
 - ❌ Keep a `useState` copy of clip data

@@ -1,7 +1,7 @@
 /**
  * TimelineEngine — Phase R Step 1 (full orchestrator)
  *
- * Wires @timeline/core: HistoryStack, PlaybackEngine, SnapIndexManager,
+ * Wires @webpacked-timeline/core: HistoryStack, PlaybackEngine, SnapIndexManager,
  * TrackIndex, KeyboardHandler, dispatch, diffStates. Exposes EngineSnapshot
  * for useSyncExternalStore.
  *
@@ -41,7 +41,7 @@ import {
   createZoomTool,
   toFrame,
   toToolId,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 import type {
   TimelineState,
@@ -60,7 +60,7 @@ import type {
   StateChange,
   SnapPointType,
   SnapIndex,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 import type { EngineSnapshot, TimelineEngineOptions } from './types/engine-snapshot';
 import { DEFAULT_PLAYHEAD_STATE } from './types/engine-snapshot';

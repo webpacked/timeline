@@ -9,14 +9,14 @@ import {
   toAssetId,
   toFrame,
   frameRate,
-} from '@timeline/core';
-import type { AssetRegistry } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { AssetRegistry } from '@webpacked-timeline/core';
 
 const fps = 30 as const;
 const duration = toFrame(fps * 120); // 2 minutes
 
 export function buildMockState() {
-  const assetMap = new Map<string, import('@timeline/core').Asset>();
+  const assetMap = new Map<string, import('@webpacked-timeline/core').Asset>();
 
   function addAsset(
     id: string,

@@ -1,4 +1,4 @@
-# @timeline/ui
+# @webpacked-timeline/ui
 
 DaVinci-style React timeline editor. One import. Full professional timeline.
 
@@ -51,7 +51,7 @@ All components are exported from the package root:
 
 ```typescript
 interface DaVinciEditorProps {
-  engine: TimelineEngine;      // from @timeline/react
+  engine: TimelineEngine;      // from @webpacked-timeline/react
   initialPpf?: number;         // initial pixels per frame (default: 4)
   onPpfChange?: (ppf: number) => void;
   registerZoomHandler?: (handler: (ppf: number) => void) => void;
@@ -132,7 +132,7 @@ See [tokens.css](src/tokens.css) for the full list of ~50 tokens. All colors con
 
 ## Presets
 
-The DaVinci preset ships with `@timeline/ui`. More presets are planned.
+The DaVinci preset ships with `@webpacked-timeline/ui`. More presets are planned.
 
 ## License
 

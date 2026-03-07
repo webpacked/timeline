@@ -5,7 +5,7 @@
  * child components via React context. No prop drilling needed.
  */
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
-import type { TimelineEngine } from '@timeline/react';
+import type { TimelineEngine } from '@webpacked-timeline/react';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

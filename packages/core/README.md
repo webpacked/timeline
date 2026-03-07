@@ -1,4 +1,4 @@
-# @timeline/core
+# @webpacked-timeline/core
 
 Headless TypeScript engine for professional NLE timeline editing. Framework-agnostic, fully tested, zero dependencies.
 
@@ -153,7 +153,7 @@ const fcpxml = exportToFCPXML(state);
 ## Tests
 
 ```bash
-pnpm --filter @timeline/core test
+pnpm --filter @webpacked-timeline/core test
 # 852 tests, 0 TypeScript errors
 ```
 

@@ -8,12 +8,12 @@ A short guide to how this repo is structured and how to read it.
 
 - **Monorepo** (pnpm workspaces + Turbo). Three main packages:
   - **`packages/core`** — Timeline kernel: state, dispatch, operations, tools, snap. No React/DOM.
-  - **`packages/react`** — Adapter: `TimelineProvider`, hooks (`useTimeline`, `useClip`, …), tool router. Imports `@timeline/core` + React.
-  - **`packages/ui`** — Components: `<Timeline>`, `<Clip>`, etc. Imports `@timeline/react` and `@timeline/core`.
+  - **`packages/react`** — Adapter: `TimelineProvider`, hooks (`useTimeline`, `useClip`, …), tool router. Imports `@webpacked-timeline/core` + React.
+  - **`packages/ui`** — Components: `<Timeline>`, `<Clip>`, etc. Imports `@webpacked-timeline/react` and `@webpacked-timeline/core`.
 
 - **Rule:** Lower layers never import from higher layers. Core is the foundation.
 
-- **Commands:** From repo root: `pnpm install`, `pnpm build`, `pnpm test`. Per-package: `pnpm --filter @timeline/core test`, etc.
+- **Commands:** From repo root: `pnpm install`, `pnpm build`, `pnpm test`. Per-package: `pnpm --filter @webpacked-timeline/core test`, etc.
 
 ---
 

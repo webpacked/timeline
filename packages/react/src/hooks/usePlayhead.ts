@@ -14,7 +14,7 @@ import type {
   PlaybackRate,
   PlaybackQuality,
   LoopRegion,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 export type UsePlayheadResult = {
   currentFrame: TimelineFrame;

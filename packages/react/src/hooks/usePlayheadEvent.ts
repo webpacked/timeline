@@ -12,7 +12,7 @@ import type {
   PlayheadEventType,
   PlayheadListener,
   PlayheadEvent,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 export function usePlayheadEvent(
   engine: PlaybackEngine,

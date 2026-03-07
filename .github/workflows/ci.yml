@@ -24,10 +24,10 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Type check
-        run: pnpm --filter @timeline/core exec tsc --noEmit
+        run: pnpm --filter @webpacked-timeline/core exec tsc --noEmit
 
       - name: Test
-        run: pnpm --filter @timeline/core test --run
+        run: pnpm --filter @webpacked-timeline/core test --run
 
       - name: Build
-        run: pnpm --filter @timeline/core build
+        run: pnpm --filter @webpacked-timeline/core build

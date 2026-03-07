@@ -14,7 +14,7 @@ _No unreleased changes._
 
 ## [0.0.1] — Phase 0 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - FrameRate discriminated union
@@ -31,7 +31,7 @@ _No unreleased changes._
 
 ## [0.1.0] — Phase 1 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - Tool scaffolding: ITool interface, ToolContext, ToolRegistry
@@ -44,7 +44,7 @@ _No unreleased changes._
 
 ## [0.2.0] — Phase 2 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - SelectionTool (click, drag, multi-drag, rubber-band)
@@ -65,7 +65,7 @@ _No unreleased changes._
 
 ## [0.3.0] — Phase 3 Complete — February 27, 2025
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 
@@ -142,18 +142,18 @@ _No unreleased changes._
 
 ## [0.8.0] — Phase U Complete — February 27, 2025
 
-### Added (@timeline/ui)
+### Added (@webpacked-timeline/ui)
 
 **CLI**
-- `npx @timeline/ui add <component>` — copies
+- `npx @webpacked-timeline/ui add <component>` — copies
   components into your project
-- `npx @timeline/ui add --preset=<name>` —
+- `npx @webpacked-timeline/ui add --preset=<name>` —
   install curated bundles
-- `npx @timeline/ui list` — show all components
+- `npx @webpacked-timeline/ui list` — show all components
   with install status
-- `npx @timeline/ui diff <component>` —
+- `npx @webpacked-timeline/ui diff <component>` —
   show changes vs registry
-- `npx @timeline/ui update <component>` —
+- `npx @webpacked-timeline/ui update <component>` —
   update with diff preview + confirmation
 - Theme install: `add theme --theme=dark-pro`
 - Manifest tracking: `.timeline-ui.json`
@@ -209,7 +209,7 @@ Tier 5 — Markers:
 
 ## [0.7.0] — Phase R Complete — February 27, 2025
 
-### Added (@timeline/react)
+### Added (@webpacked-timeline/react)
 
 **TimelineEngine**
 - Full orchestrator wiring Dispatcher,
@@ -424,7 +424,7 @@ Tier 5 — Markers:
 - play() seeks to startFrame - prerollFrames on entry
 - 'loop-point' event on wrap
 
-**React Hooks (@timeline/react)**
+**React Hooks (@webpacked-timeline/react)**
 - `usePlayhead(engine)` — useSyncExternalStore,
   stable action callbacks
 - `usePlayheadEvent(engine, type, handler)` —
@@ -440,7 +440,7 @@ Tier 5 — Markers:
 
 ## [0.4.0] — Phase 4 Complete — February 27, 2025
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 

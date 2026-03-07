@@ -1,7 +1,7 @@
-import { TimelineEngine } from '@timeline/react';
+import { TimelineEngine } from '@webpacked-timeline/react';
 import { buildMockState } from './mock-data';
-import type { PipelineConfig } from '@timeline/core';
-import { browserClock } from '@timeline/core';
+import type { PipelineConfig } from '@webpacked-timeline/core';
+import { browserClock } from '@webpacked-timeline/core';
 
 /**
  * Singleton engine instance for the demo app.

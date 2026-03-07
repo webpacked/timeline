@@ -9,7 +9,7 @@ Reference for manual checks. Hit-testing is now implemented in the adapter (see 
 
 ## How to run
 
-1. Start the demo: `pnpm --filter @timeline/demo-app dev`
+1. Start the demo: `pnpm --filter @webpacked-timeline/demo-app dev`
 2. Open the app in the browser and open DevTools → Console.
 3. Run through the actions below and note results.
 4. Run the Part 2 console commands.
@@ -75,7 +75,7 @@ Result: _e.g. No — dispatch is not called on clip click/drag_
 
 ## Root cause (why clip actions don’t work)
 
-The demo uses `useToolRouter` from `@timeline/react`, which is backed by the **adapter** tool router (`packages/react/src/adapter/tool-router.ts`). That adapter:
+The demo uses `useToolRouter` from `@webpacked-timeline/react`, which is backed by the **adapter** tool router (`packages/react/src/adapter/tool-router.ts`). That adapter:
 
 - Converts pointer events to `TimelinePointerEvent` with **frame** (from x and zoom).
 - Always sets **trackId: null** and **clipId: null** (it has no layout or hit-test).
@@ -86,9 +86,9 @@ Core tools (selection, razor, slip, etc.) all depend on `event.clipId` and/or `e
 - Razor does not split.
 - Select + drag does not move.
 
-The **full** tool router in `packages/react/src/tool-router.ts` does hit-testing: it takes a `getLayout()` that returns `timelineOriginX`, `pixelsPerFrame`, and **trackLayouts** (each track’s top/height in client coords), and it populates `frame`, `trackId`, and `clipId` via `frameAtX`, `trackAtY`, and `clipAtFrame`. That implementation is **not** currently exported from `@timeline/react` (only the adapter is). So to fix the demo:
+The **full** tool router in `packages/react/src/tool-router.ts` does hit-testing: it takes a `getLayout()` that returns `timelineOriginX`, `pixelsPerFrame`, and **trackLayouts** (each track’s top/height in client coords), and it populates `frame`, `trackId`, and `clipId` via `frameAtX`, `trackAtY`, and `clipAtFrame`. That implementation is **not** currently exported from `@webpacked-timeline/react` (only the adapter is). So to fix the demo:
 
-1. **Option A**: Export the full `createToolRouter` from `@timeline/react` (and a `useToolRouter` that uses it) and pass a `getLayout()` from the demo that computes track layouts from the DOM or from track positions (e.g. track index × track height + ruler height).
+1. **Option A**: Export the full `createToolRouter` from `@webpacked-timeline/react` (and a `useToolRouter` that uses it) and pass a `getLayout()` from the demo that computes track layouts from the DOM or from track positions (e.g. track index × track height + ruler height).
 2. **Option B**: In the demo, use a local/copy of the full tool router and call it with `getLayout()` so that pointer events get correct `clipId`/`trackId` before being sent to the engine.
 
 After wiring layout and hit-testing, clip selection, razor, and drag should work; then you can re-check Parts 1 and 5 (dispatch should be called when committing a tool action).

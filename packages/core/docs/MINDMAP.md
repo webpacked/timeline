@@ -1,4 +1,4 @@
-# @timeline/core — Architecture Mind Map
+# @webpacked-timeline/core — Architecture Mind Map
 
 Standalone mind map and flow diagrams. View in any Mermaid-compatible viewer (GitHub, VS Code Mermaid extension, etc.).
 
@@ -8,7 +8,7 @@ Standalone mind map and flow diagrams. View in any Mermaid-compatible viewer (Gi
 
 ```mermaid
 mindmap
-  root((@timeline/core))
+  root((@webpacked-timeline/core))
     RULES
       Three-layer
         core imports only stdlib + TS

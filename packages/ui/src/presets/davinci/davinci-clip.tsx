@@ -6,7 +6,7 @@
  * Uses CSS variables for theming.
  */
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import type { Clip, ProvisionalState } from '@timeline/core';
+import type { Clip, ProvisionalState } from '@webpacked-timeline/core';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 

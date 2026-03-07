@@ -2,7 +2,7 @@
  * DaVinciToolbar — tool buttons, zoom controls, transport.
  *
  * Three groups: [tools] | [zoom] | [undo/redo + play]
- * Reads all state from context + @timeline/react hooks.
+ * Reads all state from context + @webpacked-timeline/react hooks.
  */
 import React from 'react';
 import {
@@ -10,7 +10,7 @@ import {
   useIsPlaying,
   useHistory,
   useSelectedClipIds,
-} from '@timeline/react';
+} from '@webpacked-timeline/react';
 import { useTimelineContext } from '../../context/timeline-context';
 import {
   TOOL_ICONS,

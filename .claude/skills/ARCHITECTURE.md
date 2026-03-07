@@ -9,13 +9,13 @@
 
 ```
 packages/core   →  imports nothing outside core stdlib + TypeScript
-packages/react  →  imports @timeline/core + React only
-packages/ui     →  imports @timeline/react + @timeline/core + React only
+packages/react  →  imports @webpacked-timeline/core + React only
+packages/ui     →  imports @webpacked-timeline/react + @webpacked-timeline/core + React only
 ```
 
 Lower layers NEVER import from higher layers. A `packages/core` file that imports
 `React`, `ReactDOM`, `requestAnimationFrame`, `document`, or anything from
-`@timeline/react` or `@timeline/ui` is **categorically wrong** — reject it.
+`@webpacked-timeline/react` or `@webpacked-timeline/ui` is **categorically wrong** — reject it.
 
 ## Rule 2 — One Entry Point for Mutation
 

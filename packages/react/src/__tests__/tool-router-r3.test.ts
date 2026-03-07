@@ -20,8 +20,8 @@ import {
   toTrackId,
   toAssetId,
   NoOpTool,
-} from '@timeline/core';
-import type { VirtualWindow } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { VirtualWindow } from '@webpacked-timeline/core';
 
 import { TimelineEngine } from '../engine';
 import { createToolRouter } from '../adapter/tool-router';

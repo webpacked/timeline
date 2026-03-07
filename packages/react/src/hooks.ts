@@ -1,5 +1,5 @@
 /**
- * @timeline/react — hooks
+ * @webpacked-timeline/react — hooks
  *
  * Phase R Step 2: All hooks use useSyncExternalStore. Engine-as-first-arg hooks
  * live in hooks/index.ts. This file provides useEngine() from context and
@@ -10,7 +10,7 @@
 import { useContext } from 'react';
 import { TimelineContext } from './TimelineProvider';
 import type { TimelineEngine } from './engine';
-import type { TrackId, ClipId, ProvisionalState } from '@timeline/core';
+import type { TrackId, ClipId, ProvisionalState } from '@webpacked-timeline/core';
 
 // Re-export all engine-as-first-arg hooks from hooks/index
 export {

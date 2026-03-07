@@ -54,13 +54,13 @@ function useClip(id: ClipId) {
 
 ---
 
-## Hooks Never Import from @timeline/core Directly
+## Hooks Never Import from @webpacked-timeline/core Directly
 
 All calls go through the `TimelineEngine` adapter class. Hooks never call `dispatch()` directly.
 
 ```typescript
 // ❌
-import { dispatch } from "@timeline/core";
+import { dispatch } from "@webpacked-timeline/core";
 
 // ✅
 const { engine } = useTimelineContext();
@@ -167,6 +167,6 @@ function ClipShell({ id }: { id: ClipId }) {
 
 ## Common mistakes to avoid
 
-- Importing `dispatch` from `@timeline/core` inside a hook — always call `engine.dispatch()`
+- Importing `dispatch` from `@webpacked-timeline/core` inside a hook — always call `engine.dispatch()`
 - Using `useEffect` + `useState` to mirror engine state — use `useSyncExternalStore` always
 - Subscribing to `engine.getState` (entire state snapshot) — always write a scoped selector

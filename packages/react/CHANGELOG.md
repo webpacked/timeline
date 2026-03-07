@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@timeline/react` are documented here.
+All notable changes to `@webpacked-timeline/react` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.0.0-beta.1] - 2026-03-07

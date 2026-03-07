@@ -26,7 +26,7 @@ import {
   NoOpTool,
   toToolId,
   createTestClock,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 import type {
   ITool,
   ToolContext,
@@ -36,7 +36,7 @@ import type {
   ProvisionalState,
   Transaction,
   TimelineState,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 

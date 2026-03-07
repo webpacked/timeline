@@ -2,7 +2,7 @@
  * Minimal Timeline Example
  *
  * Uses Phase R TimelineEngine with options-based constructor.
- * For a full demo with @timeline/ui, see apps/demo/
+ * For a full demo with @webpacked-timeline/ui, see apps/demo/
  */
 
 import {
@@ -13,7 +13,7 @@ import {
   createAsset,
   toFrame,
   frameRate,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 import { TimelineEngine } from './engine';
 import { TimelineProvider } from './index';
 
@@ -78,7 +78,7 @@ function App() {
         <header className="bg-zinc-900 text-white p-4 border-b border-zinc-700">
           <h1 className="text-xl font-bold">Timeline Example</h1>
           <p className="text-sm text-zinc-400">
-            Phase R engine — for full UI use apps/demo with @timeline/ui
+            Phase R engine — for full UI use apps/demo with @webpacked-timeline/ui
           </p>
         </header>
         <main className="flex-1 overflow-hidden" />

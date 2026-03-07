@@ -18,9 +18,9 @@ import {
   toTrackId,
   createTestClock,
   PlaybackEngine,
-} from '@timeline/core';
-import type { TimelineState } from '@timeline/core';
-import type { PipelineConfig } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { TimelineState } from '@webpacked-timeline/core';
+import type { PipelineConfig } from '@webpacked-timeline/core';
 import { usePlayhead, usePlayheadEvent } from '../hooks';
 
 const FPS = 30;

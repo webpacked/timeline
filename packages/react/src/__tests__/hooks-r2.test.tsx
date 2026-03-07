@@ -22,8 +22,8 @@ import {
   toToolId,
   createTestClock,
   NoOpTool,
-} from '@timeline/core';
-import type { Transaction } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { Transaction } from '@webpacked-timeline/core';
 
 import { TimelineEngine } from '../engine';
 import {
@@ -104,7 +104,7 @@ function makeFixtureState() {
 
   const marker1 = {
     type: 'point' as const,
-    id: 'm1' as import('@timeline/core').MarkerId,
+    id: 'm1' as import('@webpacked-timeline/core').MarkerId,
     frame: toFrame(50),
     label: 'M1',
     color: '#ff0000',
@@ -113,7 +113,7 @@ function makeFixtureState() {
   };
   const marker2 = {
     type: 'point' as const,
-    id: 'm2' as import('@timeline/core').MarkerId,
+    id: 'm2' as import('@webpacked-timeline/core').MarkerId,
     frame: toFrame(200),
     label: 'M2',
     color: '#00ff00',

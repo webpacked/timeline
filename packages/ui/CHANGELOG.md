@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to `@timeline/ui` are documented here.
+All notable changes to `@webpacked-timeline/ui` are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [1.0.0-beta.1] - 2026-03-07
@@ -17,7 +17,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Shared utilities: `frameToPx`, `pxToFrame`, `frameToTimecode`, `rulerTickInterval`, `clamp`, `cn`
 - CSS variable theming system with ~50 tokens in `tokens.css`
 - DaVinci dark theme override in `davinci.css`
-- Style entry points: `@timeline/ui/styles/davinci` and `@timeline/ui/styles/tokens`
+- Style entry points: `@webpacked-timeline/ui/styles/davinci` and `@webpacked-timeline/ui/styles/tokens`
 - Full keyboard shortcut support (V/C/T/R/S/Y/H for tools, Space for play, arrow keys for scrubbing, Cmd+Z for undo)
 - Track resize (drag handle between tracks)
 - Clip selection, multi-select (Cmd+A), and deletion (Delete/Backspace)

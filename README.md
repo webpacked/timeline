@@ -67,9 +67,9 @@ Your App
 
 ```bash
 pnpm install
-pnpm --filter @timeline/core test    # Run core tests
-pnpm --filter @timeline/react test   # Run react tests
-pnpm --filter @timeline/ui build     # Build UI package
+pnpm --filter @webpacked-timeline/core test    # Run core tests
+pnpm --filter @webpacked-timeline/react test   # Run react tests
+pnpm --filter @webpacked-timeline/ui build     # Build UI package
 cd apps/demo && pnpm dev             # Run demo app
 ```
 
@@ -87,8 +87,8 @@ Feature-complete. All phases delivered:
 | 5 | Serialization — JSON, OTIO, EDL, AAF, FCP XML | ✅ |
 | 6 | Playback engine — PlayheadController, pipeline contracts | ✅ |
 | 7 | Performance — interval tree, compression, benchmarks | ✅ |
-| R | @timeline/react — full adapter buildout | ✅ |
-| U | @timeline/ui — DaVinci preset | ✅ |
+| R | @webpacked-timeline/react — full adapter buildout | ✅ |
+| U | @webpacked-timeline/ui — DaVinci preset | ✅ |
 
 ## Contributing
 

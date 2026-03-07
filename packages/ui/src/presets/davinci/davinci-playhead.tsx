@@ -5,7 +5,7 @@
  * Rendered as an absolute-positioned overlay.
  */
 import React from 'react';
-import { usePlayheadFrame } from '@timeline/react';
+import { usePlayheadFrame } from '@webpacked-timeline/react';
 import { useTimelineContext } from '../../context/timeline-context';
 
 export interface DaVinciPlayheadProps {

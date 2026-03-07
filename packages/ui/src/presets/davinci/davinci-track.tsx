@@ -6,7 +6,7 @@
  * Uses CSS variables for theming.
  */
 import React, { useState } from 'react';
-import { useTrackWithEngine } from '@timeline/react';
+import { useTrackWithEngine } from '@webpacked-timeline/react';
 import { useTimelineContext } from '../../context/timeline-context';
 
 // ── Props ──────────────────────────────────────────────────────────────────

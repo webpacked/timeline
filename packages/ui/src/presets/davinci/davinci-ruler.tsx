@@ -9,8 +9,8 @@ import {
   usePlayheadFrame,
   useTimelineWithEngine,
   useMarkers,
-} from '@timeline/react';
-import { toFrame, toMarkerId } from '@timeline/core';
+} from '@webpacked-timeline/react';
+import { toFrame, toMarkerId } from '@webpacked-timeline/core';
 import { useTimelineContext } from '../../context/timeline-context';
 import { frameToTimecode, rulerTickInterval } from '../../shared/time';
 
