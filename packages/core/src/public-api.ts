@@ -57,6 +57,8 @@ export type { ClipId }    from './types/clip';
 export { toClipId }       from './types/clip';
 export type { TrackId }   from './types/track';
 export { toTrackId }      from './types/track';
+export type { MarkerId }  from './types/marker';
+export { toMarkerId }     from './types/marker';
 
 // Entity types
 export type { Asset, AssetStatus }              from './types/asset';
@@ -177,6 +179,16 @@ export { toTrackGroupId, createTrackGroup } from './types/track-group';
 
 export type { LinkGroupId, LinkGroup } from './types/link-group';
 export { toLinkGroupId, createLinkGroup } from './types/link-group';
+
+// Phase 2 tools (default set for React TimelineEngine)
+export { SelectionTool } from './tools/selection';
+export { RazorTool } from './tools/razor';
+export { RippleTrimTool } from './tools/ripple-trim';
+export { RollTrimTool } from './tools/roll-trim';
+export { SlipTool } from './tools/slip';
+export { RippleDeleteTool } from './tools/ripple-delete';
+export { RippleInsertTool } from './tools/ripple-insert';
+export { HandTool } from './tools/hand';
 
 // Phase 4 Step 4: Transition and Keyframe tools (register via createRegistry / registerTool)
 export { TransitionTool } from './tools/transition-tool';

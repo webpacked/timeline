@@ -30,7 +30,7 @@ describe('TimelineProvider', () => {
       tracks:   [],
     });
     const state = createTimelineState({ timeline });
-    engine = new TimelineEngine(state);
+    engine = new TimelineEngine({ initialState: state });
   });
 
   it('should provide timeline state via useTimeline hook', () => {

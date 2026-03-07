@@ -1,0 +1,92 @@
+/* ═══════════════════════════════════════════════════════════
+   @timeline/ui — Base CSS Variable Tokens
+   
+   Every color, size, and spacing used by components references
+   these variables. Override any variable to create a custom theme.
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── App chrome ── */
+  --tl-app-bg:          hsl(220 13% 9%);
+  --tl-panel-bg:        hsl(220 13% 11%);
+  --tl-toolbar-bg:      hsl(220 13% 11%);
+  --tl-toolbar-border:  hsl(220 13% 18%);
+  --tl-toolbar-height:  40px;
+
+  /* ── Ruler ── */
+  --tl-ruler-bg:        hsl(220 13% 8%);
+  --tl-ruler-height:    32px;
+  --tl-ruler-tick:      hsl(220 13% 30%);
+  --tl-ruler-tick-maj:  hsl(220 13% 48%);
+  --tl-ruler-text:      hsl(220 10% 52%);
+
+  /* ── Timecode ── */
+  --tl-timecode-color:  hsl(0 0% 88%);
+  --tl-timecode-size:   15px;
+
+  /* ── Track ── */
+  --tl-track-bg:        hsl(220 13% 13%);
+  --tl-track-bg-video:  #28282E;
+  --tl-track-bg-audio:  #28282E;
+  --tl-track-border:    hsl(220 13% 19%);
+  --tl-track-height:    80px;
+  --tl-track-height-audio: 80px;
+
+  /* ── Label ── */
+  --tl-label-width:     200px;
+  --tl-label-bg:        hsl(220 13% 10%);
+  --tl-label-text:      hsl(220 10% 62%);
+  --tl-label-text-dim:  hsl(220 10% 45%);
+  --tl-label-border:    hsl(220 13% 19%);
+
+  /* ── Clips ── */
+  --tl-clip-video-bg:   #2E77A5;
+  --tl-clip-video-top:  #2E77A5;
+  --tl-clip-audio-bg:   #179160;
+  --tl-clip-audio-top:  #179160;
+  --tl-clip-selected:   #3da2ff;
+  --tl-clip-provisional:rgba(46,119,165,0.5);
+  --tl-clip-border:     rgba(255,255,255,0.15);
+  --tl-clip-border-sel: #6fbfff;
+  --tl-clip-text:       hsl(0 0% 92%);
+  --tl-clip-text-dim:   hsl(0 0% 65%);
+  --tl-clip-video-text: hsl(195 85% 15%);
+  --tl-clip-audio-text: hsl(142 70% 12%);
+  --tl-clip-radius:     2px;
+  --tl-clip-video-accent: hsl(195 85% 72%);
+  --tl-clip-audio-accent:#179160;
+
+  /* ── Playhead ── */
+  --tl-playhead-color:  #ff3b30;
+  --tl-playhead-width:  1px;
+
+  /* ── Snap ── */
+  --tl-snap-color:      hsl(45 90% 60%);
+
+  /* ── Toolbar buttons ── */
+  --tl-btn-bg:          transparent;
+  --tl-btn-bg-hover:    hsl(220 13% 20%);
+  --tl-btn-bg-active:   hsl(213 45% 32%);
+  --tl-btn-border:      hsl(220 13% 22%);
+  --tl-btn-border-active:#3da2ff;
+  --tl-btn-text:        hsl(220 10% 68%);
+  --tl-btn-text-active: #ffffff;
+
+  /* ── Type colors ── */
+  --tl-type-video:      #2E77A5;
+  --tl-type-audio:      #179160;
+  --tl-type-subtitle:   #d4a62a;
+  --tl-type-title:      #9a58d4;
+
+  /* ── Solo / Mute ── */
+  --tl-solo-active:     #ffd54f;
+  --tl-mute-active:     #ff5252;
+
+  /* ── Resize ── */
+  --tl-resize-handle:   hsl(220 13% 26%);
+
+  /* ── Scrollbar ── */
+  --tl-scrollbar-track: hsl(220 13% 9%);
+  --tl-scrollbar-thumb: hsl(220 13% 24%);
+  --tl-scrollbar-thumb-hover: hsl(220 13% 32%);
+}

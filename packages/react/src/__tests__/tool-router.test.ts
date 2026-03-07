@@ -256,7 +256,7 @@ describe('createToolRouter', () => {
       return rafCallbacks.length;
     });
 
-    engine = new TimelineEngine(makeState());
+    engine = new TimelineEngine({ initialState: makeState() });
     router = createToolRouter(engine, () => DEFAULT_LAYOUT);
   });
 

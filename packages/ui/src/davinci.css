@@ -1,0 +1,45 @@
+/* ═══════════════════════════════════════════════════════════
+   @timeline/ui — DaVinci Resolve Theme
+   
+   Imports base tokens and applies DaVinci-specific overrides.
+   Import this file to get the full DaVinci look:
+   
+     import '@timeline/ui/styles/davinci';
+   ═══════════════════════════════════════════════════════════ */
+
+@import './tokens.css';
+
+:root {
+  /* DaVinci-specific overrides */
+  --tl-track-height:       80px;
+  --tl-track-height-audio: 80px;
+  --tl-timecode-color:     hsl(0 0% 88%);
+  --tl-label-width:        200px;
+  --tl-clip-video-accent:  hsl(195 85% 72%);
+  --tl-clip-video-text:    hsl(195 85% 15%);
+  --tl-clip-audio-text:    hsl(142 70% 12%);
+}
+
+/* ── Scrollbar styling ── */
+.tl-scroll-area::-webkit-scrollbar {
+  height: 10px;
+  width: 10px;
+}
+.tl-scroll-area::-webkit-scrollbar-track {
+  background: var(--tl-scrollbar-track);
+}
+.tl-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--tl-scrollbar-thumb);
+  border-radius: 5px;
+}
+.tl-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--tl-scrollbar-thumb-hover);
+}
+.tl-scroll-area::-webkit-scrollbar-corner {
+  background: var(--tl-scrollbar-track);
+}
+
+/* ── Button hover ── */
+.tl-btn:hover {
+  background: var(--tl-btn-bg-hover) !important;
+}

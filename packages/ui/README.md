@@ -1,130 +1,138 @@
 # @timeline/ui
 
-Installable UI components for timeline infrastructure.
+DaVinci-style React timeline editor. One import. Full professional timeline.
 
-## Installation
-
-```bash
-npm install @timeline/ui @timeline/core @timeline/react
-```
-
-### Requirements
-
-This package requires Tailwind CSS to be installed and configured in your project:
+## Install
 
 ```bash
-npm install -D tailwindcss
+npm install @timeline/ui @timeline/react @timeline/core
 ```
 
-## Tailwind CSS Setup
+## Quick Start (30 seconds)
 
-The timeline UI components use Tailwind CSS utility classes. You need to configure Tailwind in your project:
+```tsx
+import { DaVinciEditor } from '@timeline/ui';
+import '@timeline/ui/styles/davinci';
+import { TimelineEngine } from '@timeline/react';
+import { createTimelineState, createTimeline, toFrame, frameRate } from '@timeline/core';
 
-### 1. Use the provided preset (Recommended)
+const engine = new TimelineEngine({
+  initialState: createTimelineState({
+    timeline: createTimeline({
+      id: 'tl-1',
+      name: 'My Timeline',
+      fps: frameRate(30),
+      duration: toFrame(9000),
+    }),
+  }),
+});
 
-Create or update your `tailwind.config.js`:
-
-```js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  presets: [
-    require('@timeline/ui/tailwind.config.js')
-  ],
-  content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/@timeline/ui/dist/**/*.{js,ts,jsx,tsx}',
-  ],
-  // ... your custom theme extensions
+export default function App() {
+  return <DaVinciEditor engine={engine} style={{ height: '100vh' }} />;
 }
 ```
 
-### 2. Manual setup
-
-Alternatively, ensure your Tailwind config includes the timeline UI package in the content array:
-
-```js
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: [
-    './src/**/*.{js,ts,jsx,tsx}',
-    './node_modules/@timeline/ui/dist/**/*.{js,ts,jsx,tsx}',
-  ],
-  theme: {
-    extend: {
-      // The UI components primarily use the zinc color palette
-    },
-  },
-}
-```
-
-### 3. Import Tailwind styles
-
-Make sure to import Tailwind's base styles in your main CSS file:
-
-```css
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-```
+That's it — a full DaVinci Resolve-style timeline editor with toolbar, ruler, tracks, clips, playhead, undo/redo, and keyboard shortcuts.
 
 ## Components
 
-- `Timeline` - Root timeline container with built-in UI state management
-- `Track` - Single track row
-- `Clip` - Individual clip block
-- `TimeRuler` - Timeline ruler with frame markers
+All components are exported from the package root:
 
-## Usage
+| Component | Description |
+|-----------|-------------|
+| `DaVinciEditor` | Full-layout editor (toolbar + ruler + tracks + playhead) |
+| `DaVinciToolbar` | Tool buttons, zoom controls, transport (undo/redo/play) |
+| `DaVinciRuler` | Timecode ruler with major/minor ticks |
+| `DaVinciTrack` | Track label row (name, type badge, lock, solo/mute) |
+| `DaVinciClip` | Clip block with waveform, label, trim handles |
+| `DaVinciPlayhead` | Red playhead line |
 
-```tsx
-import { Timeline } from "@timeline/ui";
-import { TimelineProvider } from "@timeline/react";
-import { TimelineEngine } from "@timeline/core";
+### DaVinciEditor Props
 
-// Create your timeline engine
-const engine = new TimelineEngine(initialState);
-
-function App() {
-  return (
-    <TimelineProvider engine={engine}>
-      <Timeline 
-        initialZoom={2}
-        initialSnappingEnabled={true}
-      />
-    </TimelineProvider>
-  );
+```typescript
+interface DaVinciEditorProps {
+  engine: TimelineEngine;      // from @timeline/react
+  initialPpf?: number;         // initial pixels per frame (default: 4)
+  onPpfChange?: (ppf: number) => void;
+  registerZoomHandler?: (handler: (ppf: number) => void) => void;
+  className?: string;
+  style?: React.CSSProperties;
 }
 ```
 
-## UI State Management
+### Context & Utilities
 
-The `Timeline` component includes built-in UI state management via `TimelineUIContext`. You can access and control the UI state from external components:
+For custom layouts, use the context directly:
 
 ```tsx
-import { useTimelineUI } from "@timeline/ui";
+import { TimelineProvider, useTimelineContext, useEngine } from '@timeline/ui';
+import { frameToPx, pxToFrame, frameToTimecode } from '@timeline/ui';
+```
 
-function CustomTransportBar() {
-  const { state, actions } = useTimelineUI();
-  
-  return (
-    <div>
-      <button onClick={() => actions.setPlayhead(frame(0))}>
-        Go to Start
-      </button>
-      <span>Playhead: {state.playhead}</span>
-      <span>Zoom: {state.zoom}x</span>
-    </div>
-  );
+## Theming
+
+All visual properties are controlled by CSS custom properties. Import the DaVinci theme:
+
+```css
+@import '@timeline/ui/styles/davinci';
+```
+
+Override any token in your CSS:
+
+```css
+:root {
+  --tl-clip-video-bg: hsl(270 70% 50%);
+  --tl-track-height: 60px;
+  --tl-playhead-color: hsl(120 60% 50%);
 }
 ```
 
-## Styling
+### Key Tokens
 
-Components use Tailwind CSS classes. You can override styles via the `className` prop:
+| Token | Default | Description |
+|-------|---------|-------------|
+| `--tl-app-bg` | `hsl(220 13% 9%)` | App background |
+| `--tl-panel-bg` | `hsl(220 13% 11%)` | Panel background |
+| `--tl-toolbar-bg` | `hsl(220 13% 11%)` | Toolbar background |
+| `--tl-toolbar-height` | `40px` | Toolbar height |
+| `--tl-ruler-height` | `32px` | Ruler height |
+| `--tl-track-height` | `80px` | Track row height |
+| `--tl-track-bg-video` | `#28282E` | Video track background |
+| `--tl-track-bg-audio` | `#28282E` | Audio track background |
+| `--tl-clip-video-bg` | `#2E77A5` | Video clip fill |
+| `--tl-clip-audio-bg` | `#179160` | Audio clip fill |
+| `--tl-clip-radius` | `2px` | Clip border radius |
+| `--tl-clip-text` | `hsl(0 0% 92%)` | Clip label color |
+| `--tl-playhead-color` | `#ff3b30` | Playhead line color |
+| `--tl-timecode-color` | `hsl(0 0% 88%)` | Timecode text color |
+| `--tl-label-width` | `200px` | Track label column width |
+| `--tl-snap-color` | `hsl(45 90% 60%)` | Snap indicator color |
 
-```tsx
-<Timeline className="border-2 border-blue-500" />
-```
+See [tokens.css](src/tokens.css) for the full list of ~50 tokens.
+
+## Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `V` | Selection tool |
+| `C` | Razor tool |
+| `T` | Ripple Trim |
+| `R` | Roll Trim |
+| `S` | Slip |
+| `Y` | Slide |
+| `H` | Hand (pan) |
+| `Space` | Play/Pause |
+| `←` / `→` | Step 1 frame |
+| `Shift+←/→` | Step 10 frames |
+| `Cmd+Z` | Undo |
+| `Cmd+Shift+Z` | Redo |
+| `Delete` | Delete selected clips |
+| `Cmd+A` | Select all |
+| `Escape` | Clear selection |
+
+## Presets
+
+The DaVinci preset ships with `@timeline/ui`. More presets are planned.
 
 ## License
 

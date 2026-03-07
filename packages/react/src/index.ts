@@ -30,21 +30,42 @@ export { TimelineProvider, TimelineContext } from './TimelineProvider';
 export type { TimelineProviderProps } from './TimelineProvider';
 
 // Engine class + snapshot type
-export { TimelineEngine } from './engine';
-export type { EngineSnapshot } from './engine';
+export { TimelineEngine, DEFAULT_PLAYHEAD_STATE } from './engine';
+export type { EngineSnapshot, TimelineEngineOptions } from './engine';
 
-// All Phase 1 hooks + Phase 6 playhead hooks (single source of truth: hooks.ts)
+// Phase R Step 2: all hooks (context-based wrappers + engine-as-first-arg from hooks/index)
 export {
   useEngine,
   useTimeline,
   useTrackIds,
   useTrack,
   useClip,
+  useClips,
+  useMarkers,
+  useHistory,
   useActiveTool,
+  useActiveToolId,
   useCanUndo,
   useCanRedo,
+  useCursor,
   useProvisional,
+  usePlayheadFrame,
+  useIsPlaying,
+  useChange,
+  usePlaybackEngine,
   usePlayhead,
   usePlayheadEvent,
+  useTimelineWithEngine,
+  useTrackIdsWithEngine,
+  useTrackWithEngine,
+  useClipWithEngine,
+  useProvisionalWithEngine,
+  useSelectedClipIds,
 } from './hooks';
 export type { UsePlayheadResult } from './hooks';
+
+// Phase R Step 3: ToolRouter (adapter) + virtual hooks
+export { createToolRouter } from './adapter/tool-router';
+export type { ToolRouterOptions, ToolRouterHandlers } from './adapter/tool-router';
+export { useToolRouter } from './hooks/use-tool-router';
+export { useVirtualWindow, useVisibleClips } from './hooks/use-virtual-window';

@@ -164,6 +164,8 @@ function convertKeyEvent(e: KeyboardEvent): TimelineKeyEvent {
     shiftKey: e.shiftKey,
     altKey:   e.altKey,
     metaKey:  e.metaKey,
+    ctrlKey:  e.ctrlKey,
+    repeat:   e.repeat,
   };
 }
 

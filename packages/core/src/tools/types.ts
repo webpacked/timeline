@@ -47,7 +47,8 @@ export type Modifiers = {
 // ---------------------------------------------------------------------------
 
 /** Normalised pointer event in frame-space.
- *  ToolRouter populates clipId via hit-test — tools never recompute it. */
+ *  ToolRouter populates clipId/trackId via hit-test — tools never recompute it.
+ *  Optional edge is set when click is within clip left/right hit zone (e.g. for trim). */
 export type TimelinePointerEvent = {
   readonly frame:    TimelineFrame;
   readonly trackId:  TrackId | null;
@@ -58,6 +59,8 @@ export type TimelinePointerEvent = {
   readonly shiftKey: boolean;
   readonly altKey:   boolean;
   readonly metaKey:  boolean;
+  /** When over a clip: 'left' | 'right' if within edge hit zone, else 'none'. */
+  readonly edge?:    'left' | 'right' | 'none';
 };
 
 export type TimelineKeyEvent = {
