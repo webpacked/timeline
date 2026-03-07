@@ -154,7 +154,7 @@ import type {
   TimelinePointerEvent,
   TimelineKeyEvent,
   ProvisionalState,
-} from "@timeline/core";
+} from "@webpacked-timeline/core";
 
 class NoOpTool implements ITool {
   readonly id = "no-op" as ToolId;
@@ -186,7 +186,7 @@ Use `NoOpTool` as a base for unit tests that need an `ITool` but don't care abou
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import { dispatch } from "@timeline/core";
+import { dispatch } from "@webpacked-timeline/core";
 
 it("MoveTool produces correct MOVE_CLIP transaction", () => {
   const tool = new MoveTool();
@@ -399,7 +399,7 @@ packages/react/src/tests/
 ```
 
 Unit tests live in core. Integration tests live in react.
-A tool test that imports anything from `@timeline/react` is wrong.
+A tool test that imports anything from `@webpacked-timeline/react` is wrong.
 
 ---
 

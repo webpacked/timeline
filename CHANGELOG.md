@@ -14,7 +14,7 @@ _No unreleased changes._
 
 ## [0.0.1] — Phase 0 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - FrameRate discriminated union
@@ -31,7 +31,7 @@ _No unreleased changes._
 
 ## [0.1.0] — Phase 1 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - Tool scaffolding: ITool interface, ToolContext, ToolRegistry
@@ -44,7 +44,7 @@ _No unreleased changes._
 
 ## [0.2.0] — Phase 2 Complete
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 - SelectionTool (click, drag, multi-drag, rubber-band)
@@ -65,7 +65,7 @@ _No unreleased changes._
 
 ## [0.3.0] — Phase 3 Complete — February 27, 2025
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 
@@ -137,6 +137,138 @@ _No unreleased changes._
 - Phase 3 adds 33+ tests across all new subsystems
 - All new state-producing tests call `checkInvariants()`
 - Subtitle import tests are pure (no state, no dispatch)
+
+---
+
+## [0.8.0] — Phase U Complete — February 27, 2025
+
+### Added (@webpacked-timeline/ui)
+
+**CLI**
+- `npx @webpacked-timeline/ui add <component>` — copies
+  components into your project
+- `npx @webpacked-timeline/ui add --preset=<name>` —
+  install curated bundles
+- `npx @webpacked-timeline/ui list` — show all components
+  with install status
+- `npx @webpacked-timeline/ui diff <component>` —
+  show changes vs registry
+- `npx @webpacked-timeline/ui update <component>` —
+  update with diff preview + confirmation
+- Theme install: `add theme --theme=dark-pro`
+- Manifest tracking: `.timeline-ui.json`
+- Registry dependency resolution (topological)
+
+**Theme system**
+- `dark-pro` theme (DaVinci-inspired default)
+- `light` theme (Final Cut Pro-inspired)
+- 45+ CSS custom property tokens
+- Token naming: `--tl-{component}-{property}-{state}`
+
+**Shared utilities** (copied into _shared/)
+- `time.ts` — frameToPx, pxToFrame,
+  frameToTimecode, rulerTickInterval
+- `geometry.ts` — Rect, clamp, normalizeRect,
+  rectsOverlap
+- `use-drag.ts` — useDrag() hook with threshold
+- `use-snap.ts` — useSnap() hook via engine
+
+**Components**
+
+Tier 1 — Core:
+  timeline-root, track, clip, playhead, ruler
+
+Tier 2 — Editing:
+  toolbar, zoom-bar
+
+Tier 3 — Media:
+  waveform (canvas), thumbnail-strip, clip-label
+
+Tier 4 — Advanced:
+  effect-lane, keyframe-diamond,
+  transition-handle
+
+Tier 5 — Markers:
+  marker-pin, marker-range, in-out-handles
+
+**Rendering contract**
+- All components read engine via TimelineProvider
+- Zero hardcoded colors (CSS vars only)
+- Render prop escape hatches on all content
+  components
+- No local useState for canonical engine values
+- All mutations via engine.dispatch() only
+
+### Tests
+- 113 UI tests (CLI + components)
+- 1152+ total tests across monorepo
+- Registry integrity: all registered files
+  verified to exist
+
+---
+
+## [0.7.0] — Phase R Complete — February 27, 2025
+
+### Added (@webpacked-timeline/react)
+
+**TimelineEngine**
+- Full orchestrator wiring Dispatcher,
+  PlaybackEngine, ToolRouter, SnapIndexManager,
+  TrackIndex, HistoryStack, KeyboardHandler
+- `TimelineEngineOptions`: pipeline, clock,
+  historyLimit, compression, tools, callbacks
+- `EngineSnapshot`: state, provisional, playhead,
+  history, trackIds, cursor, change
+- `DEFAULT_PLAYHEAD_STATE` for edit-only mode
+- Playback events wired to snapshot rebuild
+  (usePlayheadFrame updates every rAF tick)
+- `handlePointerLeave` with Option Y pattern
+- `undo()` / `redo()` with full state sync
+
+**Hooks (13 total)**
+- `useTimeline(engine)` — timeline metadata
+- `useTrackIds(engine)` — stable track list
+- `useTrack(engine, id)` — single track
+- `useClip(engine, id)` — single clip,
+  provisional-first lookup
+- `useClips(engine, trackId)` — track clips
+- `useMarkers(engine)` — timeline markers
+- `useHistory(engine)` — canUndo/canRedo,
+  stable object reference
+- `useActiveToolId(engine)` — active tool
+- `useCursor(engine)` — CSS cursor string
+- `useProvisional(engine)` — ghost clip state
+- `usePlayheadFrame(engine)` — current frame,
+  updates every rAF tick during playback
+- `useIsPlaying(engine)` — playback state
+- `useChange(engine)` — StateChange diff
+- `usePlayhead(engine)` — full playhead state
+- `usePlayheadEvent(engine, type, handler)`
+- `useVirtualWindow(engine, w, s, ppf)`
+- `useVisibleClips(engine, window)`
+- `useToolRouter(engine, options)`
+
+**ToolRouter**
+- `createToolRouter()` — React pointer/key
+  event → TimelinePointerEvent/KeyEvent
+- rAF throttle on onPointerMove only
+- Option Y: pointerLeave → handlePointerUp
+  + handlePointerLeave + clearProvisional
+- `useToolRouter()` hook with stable ref
+
+**Selector isolation**
+- Proven: updating clip A does not re-render
+  component watching clip B (toBe test)
+- `historyFlags` cache prevents spurious
+  re-renders on unchanged undo/redo state
+- `stableTrackIds` only recreates on actual
+  track list change
+
+### Tests
+- Phase R adds 97 react tests
+- 1039 total tests across core + react
+- Integration suite: 27 tests covering
+  full dispatch→hook→re-render round-trips
 
 ---
 
@@ -292,7 +424,7 @@ _No unreleased changes._
 - play() seeks to startFrame - prerollFrames on entry
 - 'loop-point' event on wrap
 
-**React Hooks (@timeline/react)**
+**React Hooks (@webpacked-timeline/react)**
 - `usePlayhead(engine)` — useSyncExternalStore,
   stable action callbacks
 - `usePlayheadEvent(engine, type, handler)` —
@@ -308,7 +440,7 @@ _No unreleased changes._
 
 ## [0.4.0] — Phase 4 Complete — February 27, 2025
 
-### @timeline/core
+### @webpacked-timeline/core
 
 #### Added
 

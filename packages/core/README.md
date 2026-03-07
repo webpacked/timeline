@@ -1,117 +1,160 @@
-# @timeline/core
+# @webpacked-timeline/core
 
-Headless NLE timeline engine. Zero UI dependencies.
-Runs anywhere TypeScript runs.
+Headless TypeScript engine for professional NLE timeline editing. Framework-agnostic, fully tested, zero dependencies.
 
 ## Install
+
 ```bash
-npm install @timeline/core
+npm install @webpacked-timeline/core
 ```
 
-## What's inside
+## Features
 
-- **Dispatcher** — atomic transactions,
-  rolling-state validation, immutable state
-- **Tools** — SelectionTool, RazorTool,
-  RippleTrimTool, RollTrimTool, SlipTool,
-  SlideTool, RippleDeleteTool, RippleInsertTool,
-  HandTool, TransitionTool, KeyframeTool, ZoomTool
-- **Playback** — PlayheadController, PlaybackEngine,
-  pipeline contracts for decode + composite
-- **Serialization** — JSON (versioned + migratable),
-  OTIO, EDL (CMX3600), AAF, FCP XML
-- **Import** — SRT/VTT subtitle import
-- **Project model** — multi-timeline container,
-  bin/folder hierarchy
-- **Performance** — interval tree (O(log n) lookup),
-  transaction compression, LRU thumbnail cache,
-  virtual rendering contract
+- **40+ atomic operations** — `MOVE_CLIP`, `RESIZE_CLIP`, `SLICE_CLIP`, `INSERT_CLIP`, `DELETE_CLIP`, `SET_MEDIA_BOUNDS`, `ADD_TRACK`, `DELETE_TRACK`, `ADD_MARKER`, `ADD_EFFECT`, `ADD_KEYFRAME`, `ADD_TRANSITION`, `LINK_CLIPS`, and more
+- **Tool system** — Selection, Razor, Ripple Trim, Roll Trim, Slip, Slide, Ripple Delete, Ripple Insert, Hand, Transition, Keyframe, Zoom
+- **Undo/redo** with transaction compression
+- **Playback engine** with J/K/L shuttle control via `KeyboardHandler`
+- **Snap system** — `SnapIndexManager` with configurable snap points
+- **Virtual windowing** — `getVisibleClips()` / `getVisibleFrameRange()` for large timelines
+- **Export** — OTIO, EDL (CMX 3600), AAF, FCP XML
+- **Serialization** — versioned JSON with `serializeTimeline` / `deserializeTimeline`
+- **Import** — SRT and VTT subtitle import
+- **Project model** — multi-timeline container with bin/folder hierarchy
+- **Interval tree** — O(log n) clip lookup via `IntervalTree` / `TrackIndex`
+- **Branded types** — `TimelineFrame`, `ClipId`, `TrackId`, `FrameRate` are distinct at compile time
+- **Zero dependencies**
 
-## Basic usage
+## Quick Start
+
 ```typescript
 import {
   createTimelineState,
+  createTimeline,
   createTrack,
   createClip,
-  toTrackId,
-  toClipId,
-  toFrame,
   dispatch,
   checkInvariants,
-} from '@timeline/core'
+  toFrame,
+  toTrackId,
+  toClipId,
+  toAssetId,
+  frameRate,
+} from '@webpacked-timeline/core';
 
-const track = createTrack(toTrackId('v1'), 'video')
-const clip  = createClip({
-  id:             toClipId('clip-1'),
-  trackId:        toTrackId('v1'),
-  startFrame:     toFrame(0),
-  durationFrames: 90,
-  mediaType:      'video',
-})
-
+// 1. Build initial state
 const state = createTimelineState({
-  timeline: createTimeline({ fps: 30, durationFrames: 900 }),
-  tracks:   [track],
-})
+  timeline: createTimeline({
+    id: 'tl-1',
+    name: 'My Timeline',
+    fps: frameRate(30),
+    duration: toFrame(9000),
+    tracks: [
+      createTrack({ id: toTrackId('v1'), name: 'Video 1', type: 'video' }),
+    ],
+  }),
+});
 
+// 2. Dispatch an operation
 const result = dispatch(state, {
-  operations: [{ type: 'INSERT_CLIP', clip, trackId: track.id }],
-  label: 'Add clip',
+  id: 'tx-1',
+  label: 'Insert clip',
   timestamp: Date.now(),
-})
+  operations: [{
+    type: 'INSERT_CLIP',
+    trackId: toTrackId('v1'),
+    clip: createClip({
+      id: toClipId('clip-1'),
+      assetId: toAssetId('asset-1'),
+      trackId: toTrackId('v1'),
+      timelineStart: toFrame(0),
+      timelineEnd: toFrame(90),
+      mediaIn: toFrame(0),
+      mediaOut: toFrame(90),
+      name: 'Intro',
+    }),
+  }],
+});
 
+// 3. Validate
 if (result.ok) {
-  const violations = checkInvariants(result.state)
-  console.log(violations) // []
+  const violations = checkInvariants(result.state);
+  console.log(violations); // []
 }
 ```
 
 ## Playback
-```typescript
-import {
-  PlaybackEngine,
-  browserClock,
-} from '@timeline/core'
 
-const engine = new PlaybackEngine(
+```typescript
+import { PlaybackEngine, browserClock } from '@webpacked-timeline/core';
+
+const playback = new PlaybackEngine(
   state,
-  { videoDecoder, compositor },
+  { videoDecoder, compositor }, // PipelineConfig
   { width: 1920, height: 1080 },
   browserClock,
-)
+);
 
-engine.play()
-engine.on((event) => {
-  if (event.type === 'ended') console.log('done')
-})
+playback.play();
 ```
 
 ## Serialization
-```typescript
-import { serializeTimeline, deserializeTimeline }
-  from '@timeline/core'
 
-const json  = serializeTimeline(state)
-const state2 = deserializeTimeline(json)
-// checkInvariants() runs automatically on deserialize
+```typescript
+import {
+  serializeTimeline,
+  deserializeTimeline,
+  exportToOTIO,
+  exportToEDL,
+  exportToAAF,
+  exportToFCPXML,
+} from '@webpacked-timeline/core';
+
+// JSON round-trip
+const json = serializeTimeline(state);
+const restored = deserializeTimeline(json);
+
+// Industry formats
+const otio = exportToOTIO(state);
+const edl = exportToEDL(state);
+const aaf = exportToAAF(state);
+const fcpxml = exportToFCPXML(state);
 ```
 
-## Architecture decisions
+## Architecture
 
-- **Immutable state** — every operation returns
-  a new object. Unchanged clips keep their reference.
-- **Branded types** — `TimelineFrame`, `ClipId`,
-  `TrackId` are distinct types at compile time.
-- **Rolling-state validation** — each op in a
-  compound transaction is validated against the
-  result of the previous op, not the original state.
-- **No DOM, no React** — safe to use in Workers,
-  Node, or Electron main process.
+- **Immutable state** — every operation returns a new object; unchanged clips keep their reference identity
+- **Rolling-state validation** — each op in a compound transaction is validated against the result of the previous op
+- **Branded types** — `TimelineFrame`, `ClipId`, `TrackId` are distinct types at compile time
+- **No DOM, no React** — safe to use in Workers, Node.js, or Electron main process
 
-## Test
+## API Reference
+
+### Factories
+`createTimeline`, `createTrack`, `createClip`, `createAsset`, `createTimelineState`
+
+### Frame Utilities
+`toFrame`, `frameRate`, `framesToTimecode`, `framesToSeconds`, `secondsToFrames`, `FrameRates`
+
+### State Management
+`dispatch`, `checkInvariants`, `HistoryStack`, `TransactionCompressor`
+
+### Tools
+`SelectionTool`, `RazorTool`, `RippleTrimTool`, `RollTrimTool`, `SlipTool`, `SlideTool`, `RippleDeleteTool`, `RippleInsertTool`, `HandTool`, `TransitionTool`, `KeyframeTool`, `ZoomTool`
+
+### Playback
+`PlaybackEngine`, `PlayheadController`, `KeyboardHandler`, `browserClock`, `nodeClock`
+
+### Serialization & Export
+`serializeTimeline`, `deserializeTimeline`, `exportToOTIO`, `importFromOTIO`, `exportToEDL`, `exportToAAF`, `exportToFCPXML`
+
+### Performance
+`IntervalTree`, `TrackIndex`, `SnapIndexManager`, `ThumbnailCache`, `ThumbnailQueue`, `getVisibleClips`
+
+## Tests
+
 ```bash
-pnpm --filter @timeline/core test
-# 942 tests, 0 TypeScript errors
+pnpm --filter @webpacked-timeline/core test
+# 852 tests, 0 TypeScript errors
 ```
 
 ## License

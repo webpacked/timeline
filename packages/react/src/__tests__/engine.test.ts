@@ -20,11 +20,13 @@ import { TimelineEngine, type EngineSnapshot } from '../engine';
 import {
   createTimelineState,
   createTimeline,
+  createTrack,
   toFrame,
   toTimecode,
   NoOpTool,
   toToolId,
-} from '@timeline/core';
+  createTestClock,
+} from '@webpacked-timeline/core';
 import type {
   ITool,
   ToolContext,
@@ -34,7 +36,7 @@ import type {
   ProvisionalState,
   Transaction,
   TimelineState,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -68,7 +70,14 @@ function makePointerEvent(frame = 0): TimelinePointerEvent {
 }
 
 function makeKeyEvent(key = 'x'): TimelineKeyEvent {
-  return { key, code: `Key${key.toUpperCase()}`, shiftKey: false, altKey: false, metaKey: false };
+  return {
+    key,
+    code: key === ' ' ? 'Space' : `Key${key.toUpperCase()}`,
+    shiftKey: false,
+    altKey: false,
+    metaKey: false,
+    ctrlKey: false,
+  };
 }
 
 /** Minimal valid transaction — rename the timeline. */
@@ -105,9 +114,12 @@ function makeTool(id: string, overrides: Partial<ITool>): ITool {
 
 function makeEngine() {
   const state = makeState();
-  // Two tools: NoOpTool (default) + a placeholder "alt" tool
   const altTool = makeTool('alt', {});
-  return new TimelineEngine(state, [NoOpTool, altTool], toToolId('noop'));
+  return new TimelineEngine({
+    initialState: state,
+    tools: [NoOpTool, altTool],
+    defaultToolId: 'noop',
+  });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -196,9 +208,10 @@ describe('undo() / redo()', () => {
 
   it('undo() is a no-op when canUndo is false', () => {
     const engine = makeEngine();
-    const snap = engine.getSnapshot();
-    engine.undo(); // nothing to undo
-    expect(engine.getSnapshot()).toBe(snap); // same reference
+    const nameBefore = engine.getSnapshot().state.timeline.name;
+    const undone = engine.undo();
+    expect(undone).toBe(false);
+    expect(engine.getSnapshot().state.timeline.name).toBe(nameBefore);
   });
 });
 
@@ -208,7 +221,11 @@ describe('provisional state', () => {
     const moveTool = makeTool('move', {
       onPointerMove: () => ghost,
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, moveTool], toToolId('move'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, moveTool],
+      defaultToolId: 'move',
+    });
     engine.handlePointerMove(makePointerEvent(), noModifiers);
     expect(engine.getSnapshot().provisional).toBe(ghost);
   });
@@ -219,7 +236,11 @@ describe('provisional state', () => {
     const moveTool = makeTool('move', {
       onPointerMove: () => callCount++ === 0 ? ghost : null,
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, moveTool], toToolId('move'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, moveTool],
+      defaultToolId: 'move',
+    });
     engine.handlePointerMove(makePointerEvent(), noModifiers); // sets provisional
     engine.handlePointerMove(makePointerEvent(), noModifiers); // clears provisional
     expect(engine.getSnapshot().provisional).toBeNull();
@@ -231,7 +252,11 @@ describe('provisional state', () => {
       onPointerMove: () => ghost,
       onPointerUp:   () => makeRenameTx('committed'),
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, upTool], toToolId('up'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, upTool],
+      defaultToolId: 'up',
+    });
     engine.handlePointerMove(makePointerEvent(), noModifiers); // sets provisional
     engine.handlePointerUp(makePointerEvent(), noModifiers);   // clears, dispatches
     expect(engine.getSnapshot().provisional).toBeNull();
@@ -244,7 +269,11 @@ describe('provisional state', () => {
       onPointerMove: () => ghost,
       onPointerUp:   () => null,               // no commit
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, upTool], toToolId('up'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, upTool],
+      defaultToolId: 'up',
+    });
     engine.handlePointerMove(makePointerEvent(), noModifiers);
     engine.handlePointerUp(makePointerEvent(), noModifiers);
     expect(engine.getSnapshot().provisional).toBeNull();
@@ -254,29 +283,27 @@ describe('provisional state', () => {
 describe('activateTool()', () => {
   it('snapshot.activeToolId changes after activateTool()', () => {
     const engine = makeEngine();
-    expect(engine.getSnapshot().activeToolId).toBe(toToolId('noop'));
-    engine.activateTool(toToolId('alt'));
-    expect(engine.getSnapshot().activeToolId).toBe(toToolId('alt'));
+    expect(engine.getSnapshot().activeToolId).toBe('noop');
+    engine.activateTool('alt');
+    expect(engine.getSnapshot().activeToolId).toBe('alt');
   });
 
   it('activateTool() calls onCancel() on the outgoing tool', () => {
     const cancelSpy = vi.fn();
     const cancelTool = makeTool('cancel', { onCancel: cancelSpy });
-    const engine = new TimelineEngine(
-      makeState(), [cancelTool, NoOpTool], toToolId('cancel'),
-    );
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [cancelTool, NoOpTool],
+      defaultToolId: 'cancel',
+    });
     engine.activateTool(toToolId('noop'));
     expect(cancelSpy).toHaveBeenCalledOnce();
   });
 
   it('activateTool() throws on unknown id — snapshot unchanged', () => {
     const engine = makeEngine();
-    const snapBefore = engine.getSnapshot();
-    expect(() => engine.activateTool(toToolId('ghost'))).toThrow();
-    // snapshot must not have changed (activateTool throws, so engine doesn't rebuild)
-    // We can't check same ref since activateTool rebuilds before throwing (registry throws)
-    // but the activeToolId must still be noop
-    expect(engine.getSnapshot().activeToolId).toBe(toToolId('noop'));
+    expect(() => engine.activateTool('ghost')).toThrow();
+    expect(engine.getSnapshot().activeToolId).toBe('noop');
   });
 });
 
@@ -292,7 +319,11 @@ describe('handlePointerDown', () => {
   it('delegates to getActiveTool().onPointerDown', () => {
     const downSpy = vi.fn();
     const downTool = makeTool('down', { onPointerDown: downSpy });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, downTool], toToolId('down'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, downTool],
+      defaultToolId: 'down',
+    });
     const event = makePointerEvent(10);
     engine.handlePointerDown(event, noModifiers);
     expect(downSpy).toHaveBeenCalledOnce();
@@ -313,7 +344,11 @@ describe('handleKeyDown', () => {
     const keyTool = makeTool('keytool', {
       onKeyDown: (_e: TimelineKeyEvent, _ctx: ToolContext) => makeRenameTx('from-key'),
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, keyTool], toToolId('keytool'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, keyTool],
+      defaultToolId: 'keytool',
+    });
     const listener = vi.fn();
     engine.subscribe(listener);
 
@@ -323,30 +358,14 @@ describe('handleKeyDown', () => {
   });
 });
 
-describe('setPixelsPerFrame', () => {
-  it('does NOT trigger notify — ppf is not in EngineSnapshot', () => {
-    const engine = makeEngine();
-    const listener = vi.fn();
-    engine.subscribe(listener);
-    engine.setPixelsPerFrame(20);
-    expect(listener).not.toHaveBeenCalled();
-  });
-});
-
-describe('setPlayheadFrame', () => {
-  it('triggers notify — playhead changes are visible state', () => {
-    const engine = makeEngine();
-    const listener = vi.fn();
-    engine.subscribe(listener);
-    engine.setPlayheadFrame(toFrame(100));
-    expect(listener).toHaveBeenCalledOnce();
-  });
-});
-
 describe('NoOpTool default', () => {
-  it('engine with no tools arg defaults to NoOpTool with activeToolId "noop"', () => {
-    const engine = new TimelineEngine(makeState());
-    expect(engine.getSnapshot().activeToolId).toBe(toToolId('noop'));
+  it('engine with defaultToolId "noop" has activeToolId "noop"', () => {
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool],
+      defaultToolId: 'noop',
+    });
+    expect(engine.getSnapshot().activeToolId).toBe('noop');
     // Confirm all pointer/key methods run without throwing
     expect(() => {
       engine.handlePointerDown(makePointerEvent(), noModifiers);
@@ -363,7 +382,11 @@ describe('notify() storm guard', () => {
     const moveTool = makeTool('move', {
       onPointerMove: () => makeProvisional(),
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, moveTool], toToolId('move'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, moveTool],
+      defaultToolId: 'move',
+    });
     const listener = vi.fn();
     engine.subscribe(listener);
     engine.handlePointerMove(makePointerEvent(), noModifiers);
@@ -375,9 +398,234 @@ describe('notify() storm guard', () => {
     const moveTool = makeTool('movetool', {
       onPointerMove: () => ghost,
     });
-    const engine = new TimelineEngine(makeState(), [NoOpTool, moveTool], toToolId('movetool'));
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      tools: [NoOpTool, moveTool],
+      defaultToolId: 'movetool',
+    });
     engine.handlePointerMove(makePointerEvent(), noModifiers);
     // toBe not toEqual — confirms no unnecessary copying
     expect(engine.getSnapshot().provisional).toBe(ghost);
+  });
+});
+
+// ── Phase R Step 1 — Full orchestrator (23 new tests) ────────────────────────
+
+describe('Phase R Step 1 — Construction', () => {
+  it('1. Engine constructs without pipeline (edit-only)', () => {
+    const engine = new TimelineEngine({ initialState: makeState() });
+    expect(engine.playbackEngine).toBeNull();
+    expect(engine.getSnapshot().playhead.isPlaying).toBe(false);
+  });
+
+  it('2. Engine constructs with pipeline', () => {
+    const mockPipeline = {
+      videoDecoder: vi.fn().mockResolvedValue({}),
+      compositor: vi.fn().mockResolvedValue({}),
+    } as any;
+    const { clock } = createTestClock();
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      pipeline: mockPipeline,
+      clock,
+    });
+    expect(engine.playbackEngine).not.toBeNull();
+  });
+
+  it('3. getSnapshot() returns valid EngineSnapshot', () => {
+    const engine = makeEngine();
+    const snap = engine.getSnapshot();
+    expect(snap).toHaveProperty('state');
+    expect(snap).toHaveProperty('provisional');
+    expect(snap).toHaveProperty('activeToolId');
+    expect(snap).toHaveProperty('canUndo');
+    expect(snap).toHaveProperty('canRedo');
+    expect(snap).toHaveProperty('trackIds');
+    expect(snap).toHaveProperty('cursor');
+    expect(snap).toHaveProperty('playhead');
+    expect(snap).toHaveProperty('change');
+  });
+
+  it('4. Initial snapshot has correct trackIds', () => {
+    const state = makeState();
+    const engine = new TimelineEngine({ initialState: state });
+    const expected = state.timeline.tracks.map((t) => t.id);
+    expect(engine.getSnapshot().trackIds).toEqual(expected);
+  });
+
+  it('5. Initial canUndo: false, canRedo: false', () => {
+    const engine = makeEngine();
+    expect(engine.getSnapshot().canUndo).toBe(false);
+    expect(engine.getSnapshot().canRedo).toBe(false);
+  });
+});
+
+describe('Phase R Step 1 — dispatch', () => {
+  it('6. dispatch updates snapshot.state', () => {
+    const engine = makeEngine();
+    engine.dispatch(makeRenameTx('NewName'));
+    expect(engine.getSnapshot().state.timeline.name).toBe('NewName');
+  });
+
+  it('7. dispatch updates canUndo: true', () => {
+    const engine = makeEngine();
+    engine.dispatch(makeRenameTx('X'));
+    expect(engine.getSnapshot().canUndo).toBe(true);
+  });
+
+  it('8. dispatch notifies subscribers', () => {
+    const engine = makeEngine();
+    const listener = vi.fn();
+    engine.subscribe(listener);
+    engine.dispatch(makeRenameTx('Y'));
+    expect(listener).toHaveBeenCalled();
+  });
+
+  it('9. Failed dispatch does not notify subscribers', () => {
+    const engine = makeEngine();
+    const listener = vi.fn();
+    engine.subscribe(listener);
+    engine.dispatch(makeRejectTx());
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('10. dispatch updates stableTrackIds when track list changes', () => {
+    const state = makeState();
+    const engine = new TimelineEngine({ initialState: state });
+    const idsBefore = engine.getSnapshot().trackIds;
+    const newTrack = createTrack({
+      id: 'track-new',
+      name: 'New',
+      type: 'video',
+      clips: [],
+    });
+    engine.dispatch({
+      id: 'add',
+      label: 'Add track',
+      timestamp: 0,
+      operations: [{ type: 'ADD_TRACK', track: newTrack }],
+    });
+    const idsAfter = engine.getSnapshot().trackIds;
+    expect(idsAfter.length).toBe(idsBefore.length + 1);
+    expect(idsAfter).toContain('track-new');
+  });
+});
+
+describe('Phase R Step 1 — undo/redo', () => {
+  it('11. undo() restores previous state', () => {
+    const engine = makeEngine();
+    const nameBefore = engine.getSnapshot().state.timeline.name;
+    engine.dispatch(makeRenameTx('After'));
+    engine.undo();
+    expect(engine.getSnapshot().state.timeline.name).toBe(nameBefore);
+  });
+
+  it('12. undo() updates canUndo/canRedo flags', () => {
+    const engine = makeEngine();
+    engine.dispatch(makeRenameTx('A'));
+    expect(engine.getSnapshot().canUndo).toBe(true);
+    expect(engine.getSnapshot().canRedo).toBe(false);
+    engine.undo();
+    expect(engine.getSnapshot().canUndo).toBe(false);
+    expect(engine.getSnapshot().canRedo).toBe(true);
+  });
+
+  it('13. redo() after undo restores forward state', () => {
+    const engine = makeEngine();
+    engine.dispatch(makeRenameTx('Redone'));
+    engine.undo();
+    engine.redo();
+    expect(engine.getSnapshot().state.timeline.name).toBe('Redone');
+  });
+
+  it('14. undo() returns false when nothing to undo', () => {
+    const engine = makeEngine();
+    expect(engine.undo()).toBe(false);
+  });
+});
+
+describe('Phase R Step 1 — Tools', () => {
+  it('15. activateTool changes activeToolId in snapshot', () => {
+    const engine = makeEngine();
+    engine.activateTool('alt');
+    expect(engine.getSnapshot().activeToolId).toBe('alt');
+  });
+
+  it('16. getActiveToolId returns correct id', () => {
+    const engine = makeEngine();
+    expect(engine.getActiveToolId()).toBe('noop');
+    engine.activateTool('alt');
+    expect(engine.getActiveToolId()).toBe('alt');
+  });
+
+  it('17. handleKeyDown returns true for Space key when playback engine present', () => {
+    const mockPipeline = { videoDecoder: vi.fn(), compositor: vi.fn() } as any;
+    const { clock } = createTestClock();
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      pipeline: mockPipeline,
+      clock,
+    });
+    const result = engine.handleKeyDown(
+      { key: ' ', code: 'Space', shiftKey: false, altKey: false, metaKey: false, ctrlKey: false },
+      noModifiers,
+    );
+    expect(result).toBe(true);
+  });
+});
+
+describe('Phase R Step 1 — Snapshot stability and subscribers', () => {
+  it('18. dispatch calls subscriber exactly once per dispatch', () => {
+    const engine = makeEngine();
+    const listener = vi.fn();
+    engine.subscribe(listener);
+    engine.dispatch(makeRenameTx('Once'));
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('19. subscribe returns unsubscribe function', () => {
+    const engine = makeEngine();
+    const unsub = engine.subscribe(vi.fn());
+    expect(typeof unsub).toBe('function');
+    unsub();
+  });
+
+  it('20. After unsubscribe, callback not called', () => {
+    const engine = makeEngine();
+    const listener = vi.fn();
+    const unsub = engine.subscribe(listener);
+    unsub();
+    engine.dispatch(makeRenameTx('NoNotify'));
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('21. Multiple subscribers all notified', () => {
+    const engine = makeEngine();
+    const a = vi.fn();
+    const b = vi.fn();
+    engine.subscribe(a);
+    engine.subscribe(b);
+    engine.dispatch(makeRenameTx('Both'));
+    expect(a).toHaveBeenCalled();
+    expect(b).toHaveBeenCalled();
+  });
+});
+
+describe('Phase R Step 1 — Playback integration', () => {
+  it('22. playbackEngine is null without pipeline', () => {
+    const engine = new TimelineEngine({ initialState: makeState() });
+    expect(engine.playbackEngine).toBeNull();
+  });
+
+  it('23. playbackEngine is PlaybackEngine with pipeline', () => {
+    const mockPipeline = { videoDecoder: vi.fn(), compositor: vi.fn() } as any;
+    const { clock } = createTestClock();
+    const engine = new TimelineEngine({
+      initialState: makeState(),
+      pipeline: mockPipeline,
+      clock,
+    });
+    expect(engine.playbackEngine).not.toBeNull();
+    expect(typeof (engine.playbackEngine as any)?.getState).toBe('function');
   });
 });

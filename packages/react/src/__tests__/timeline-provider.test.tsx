@@ -10,9 +10,9 @@ import {
   createTimelineState,
   toFrame,
   frameRate,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 import {
-  TimelineEngine,         // Phase 1 engine from @timeline/react
+  TimelineEngine,         // Phase 1 engine from @webpacked-timeline/react
   TimelineProvider,
   useTimeline,
 } from '../index';
@@ -30,7 +30,7 @@ describe('TimelineProvider', () => {
       tracks:   [],
     });
     const state = createTimelineState({ timeline });
-    engine = new TimelineEngine(state);
+    engine = new TimelineEngine({ initialState: state });
   });
 
   it('should provide timeline state via useTimeline hook', () => {

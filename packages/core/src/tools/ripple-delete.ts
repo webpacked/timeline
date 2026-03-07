@@ -18,7 +18,7 @@
  * because 'delete' is not a single-char tool-activation key.
  *
  * RULES:
- *   - Zero imports from React, DOM, @timeline/react, @timeline/ui
+ *   - Zero imports from React, DOM, @webpacked-timeline/react, @webpacked-timeline/ui
  *   - onPointerMove never dispatches (returns null always)
  *   - onPointerUp never mutates instance state
  *   - Every instance variable appears in onCancel()

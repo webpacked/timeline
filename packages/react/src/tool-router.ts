@@ -26,7 +26,7 @@ import type {
   ClipId,
   TimelineFrame,
   TimelineState,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -164,6 +164,8 @@ function convertKeyEvent(e: KeyboardEvent): TimelineKeyEvent {
     shiftKey: e.shiftKey,
     altKey:   e.altKey,
     metaKey:  e.metaKey,
+    ctrlKey:  e.ctrlKey,
+    repeat:   e.repeat,
   };
 }
 

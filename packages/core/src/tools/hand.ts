@@ -20,7 +20,7 @@
  *   This allows testing drag tracking without a live callback.
  *
  * RULES:
- *   - Zero imports from React, DOM, @timeline/react, @timeline/ui
+ *   - Zero imports from React, DOM, @webpacked-timeline/react, @webpacked-timeline/ui
  *   - Every instance variable appears in onCancel()
  */
 

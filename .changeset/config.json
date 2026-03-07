@@ -4,7 +4,7 @@
   "commit": false,
   "fixed": [],
   "linked": [
-    ["@timeline/core", "@timeline/react", "@timeline/ui"]
+    ["@webpacked-timeline/core", "@webpacked-timeline/react", "@webpacked-timeline/ui"]
   ],
   "access": "public",
   "baseBranch": "main",

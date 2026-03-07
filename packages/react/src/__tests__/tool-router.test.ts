@@ -36,8 +36,8 @@ import {
   toTrackId,
   toClipId,
   toAssetId,
-} from '@timeline/core';
-import type { TimelinePointerEvent, TimelineKeyEvent, Modifiers } from '@timeline/core';
+} from '@webpacked-timeline/core';
+import type { TimelinePointerEvent, TimelineKeyEvent, Modifiers } from '@webpacked-timeline/core';
 
 import { TimelineEngine } from '../index';
 
@@ -256,7 +256,7 @@ describe('createToolRouter', () => {
       return rafCallbacks.length;
     });
 
-    engine = new TimelineEngine(makeState());
+    engine = new TimelineEngine({ initialState: makeState() });
     router = createToolRouter(engine, () => DEFAULT_LAYOUT);
   });
 

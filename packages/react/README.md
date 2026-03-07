@@ -1,73 +1,121 @@
-# React + TypeScript + Vite
+# @webpacked-timeline/react
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React adapter for `@webpacked-timeline/core`. Provides `TimelineEngine`, hooks, context, and tool routing for building timeline editors.
 
-Currently, two official plugins are available:
+## Install
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install @webpacked-timeline/core @webpacked-timeline/react
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Both packages are required. `@webpacked-timeline/core` is a peer dependency.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Quick Start
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```tsx
+import { TimelineEngine, TimelineProvider, useTrackIds, usePlayheadFrame } from '@webpacked-timeline/react';
+import { createTimelineState, createTimeline, toFrame, frameRate } from '@webpacked-timeline/core';
+
+const engine = new TimelineEngine({
+  initialState: createTimelineState({
+    timeline: createTimeline({
+      id: 'tl-1',
+      name: 'My Timeline',
+      fps: frameRate(30),
+      duration: toFrame(9000),
+    }),
+  }),
+});
+
+function App() {
+  return (
+    <TimelineProvider engine={engine}>
+      <TimelineView />
+    </TimelineProvider>
+  );
+}
+
+function TimelineView() {
+  const trackIds = useTrackIds();
+  const frame = usePlayheadFrame();
+  return (
+    <div>
+      <p>Frame: {frame as number}</p>
+      <p>{trackIds.length} tracks</p>
+    </div>
+  );
+}
 ```
+
+## Hooks
+
+All hooks accept an optional `engine` argument for use outside `TimelineProvider`. Inside the provider, they read from context automatically.
+
+| Hook | Returns | Re-renders when |
+|------|---------|-----------------|
+| `useEngine()` | `TimelineEngine` | — (stable ref) |
+| `useTimeline(engine?)` | `Timeline` | timeline metadata changes |
+| `useTrackIds(engine?)` | `string[]` | tracks added/removed/reordered |
+| `useTrack(engine?, trackId)` | `Track \| null` | that track changes |
+| `useClip(engine?, clipId)` | `Clip \| null` | that clip changes |
+| `useClips(engine?, trackId)` | `Clip[]` | any clip on track changes |
+| `useMarkers(engine?)` | `Marker[]` | markers change |
+| `useHistory(engine?)` | `{ canUndo, canRedo }` | history changes |
+| `usePlayheadFrame(engine?)` | `TimelineFrame` | every frame tick |
+| `useIsPlaying(engine?)` | `boolean` | play/pause toggle |
+| `useActiveToolId(engine?)` | `string` | tool switch |
+| `useActiveTool(engine?)` | `ITool` | tool switch |
+| `useProvisional(engine?)` | `ProvisionalState \| null` | drag preview |
+| `useSelectedClipIds(engine?)` | `ReadonlySet<string>` | selection changes |
+| `useCursor(engine?)` | `string` | cursor style changes |
+| `useCanUndo(engine?)` | `boolean` | undo availability |
+| `useCanRedo(engine?)` | `boolean` | redo availability |
+| `useChange(engine?)` | `StateChange` | any state diff |
+| `usePlaybackEngine(engine?)` | `PlaybackEngine \| null` | — |
+| `usePlayhead(engine?)` | `UsePlayheadResult` | playhead state |
+| `useVirtualWindow(engine, vpWidth, scrollLeft, ppf)` | `VirtualWindow` | viewport changes |
+| `useVisibleClips(engine, window)` | `VirtualClipEntry[]` | visible clips change |
+
+### Engine-first variants
+
+For use without context: `useTimelineWithEngine(engine)`, `useTrackIdsWithEngine(engine)`, `useTrackWithEngine(engine, id)`, `useClipWithEngine(engine, id)`, `useProvisionalWithEngine(engine)`.
+
+## Tool Routing
+
+```tsx
+import { useToolRouter } from '@webpacked-timeline/react';
+
+const handlers = useToolRouter(engine, {
+  getPixelsPerFrame: () => ppf,
+});
+
+return (
+  <div {...handlers} tabIndex={0}>
+    {/* timeline content */}
+  </div>
+);
+```
+
+## TimelineEngine
+
+`TimelineEngine` is the main orchestrator class. It wires together the core dispatcher, history, tools, playback, snap system, and keyboard handler.
+
+```typescript
+const engine = new TimelineEngine({
+  initialState,                    // TimelineState (required)
+  pipeline,                        // PipelineConfig (optional)
+  clock,                           // Clock (optional, defaults to browserClock)
+  getPixelsPerFrame,               // () => number (optional)
+  onZoomChange,                    // (ppf: number) => void (optional)
+  historyLimit,                    // number (optional, default 100)
+  compression,                     // CompressionPolicy (optional)
+  tools,                           // ITool[] (optional, overrides defaults)
+  defaultToolId,                   // string (optional, default 'selection')
+});
+```
+
+Key methods: `dispatch()`, `undo()`, `redo()`, `seekTo()`, `activateTool()`, `getState()`, `getSnapshot()`, `subscribe()`.
+
+## License
+
+MIT
