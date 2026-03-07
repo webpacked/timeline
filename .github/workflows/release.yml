@@ -1,3 +1,7 @@
+# Temporarily disabled
+on:
+  workflow_dispatch:  # manual trigger only
+
 name: Release
 
 on:
