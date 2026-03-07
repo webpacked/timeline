@@ -1,19 +1,18 @@
 /**
- * @timeline/react - TimelineProvider
- * 
- * React context provider for the timeline engine.
- * 
- * This component provides the TimelineEngine instance to all child components
- * via React context. Use the hooks (useEngine, useTimeline, etc.) to access
- * the engine and subscribe to state changes.
- * 
+ * @webpacked-timeline/react - TimelineProvider
+ *
+ * React context provider for the Phase 1 TimelineEngine.
+ *
+ * Provides the engine to all child components via React context.
+ * All hooks read from this context via useTimelineContext() in hooks.ts.
+ *
  * @example
  * ```tsx
- * import { TimelineEngine } from '@timeline/core';
- * import { TimelineProvider } from '@timeline/react';
- * 
+ * import { TimelineEngine } from '@webpacked-timeline/react';
+ * import { TimelineProvider } from '@webpacked-timeline/react';
+ *
  * const engine = new TimelineEngine(initialState);
- * 
+ *
  * function App() {
  *   return (
  *     <TimelineProvider engine={engine}>
@@ -25,34 +24,20 @@
  */
 
 import { createContext, ReactNode } from 'react';
-import { TimelineEngine } from '@timeline/core';
+import type { TimelineEngine } from './engine';
 
 /**
- * Timeline context
- * 
- * Provides the TimelineEngine instance to child components.
- * Use the hooks to access this context.
+ * React context that holds the Phase 1 TimelineEngine instance.
+ * Use via hooks — never access this directly in components.
  */
 export const TimelineContext = createContext<TimelineEngine | null>(null);
 
-/**
- * Timeline provider props
- */
 export interface TimelineProviderProps {
-  /** The timeline engine instance */
-  engine: TimelineEngine;
-  /** Child components */
+  /** The Phase 1 timeline engine instance */
+  engine:   TimelineEngine;
   children: ReactNode;
 }
 
-/**
- * Timeline provider component
- * 
- * Wraps your application to provide the timeline engine to all child components.
- * 
- * @param props - Provider props
- * @returns Provider component
- */
 export function TimelineProvider({ engine, children }: TimelineProviderProps) {
   return (
     <TimelineContext.Provider value={engine}>

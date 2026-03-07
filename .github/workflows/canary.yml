@@ -1,0 +1,38 @@
+# Temporarily disabled
+on:
+  workflow_dispatch:  # manual trigger only
+
+name: Canary Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  canary:
+    name: Publish Canary
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+          registry-url: "https://registry.npmjs.org"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test --recursive
+
+      - name: Publish canary
+        run: |
+          npx changeset version --snapshot canary
+          npx changeset publish --tag canary
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

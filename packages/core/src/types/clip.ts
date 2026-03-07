@@ -1,176 +1,130 @@
 /**
- * CLIP MODEL
- * 
- * A Clip represents a time-bound reference to an Asset on a Track.
- * 
- * WHAT IS A CLIP?
- * - A piece of media placed at a specific time on the timeline
- * - References an Asset (the source media)
- * - Defines WHEN it appears (timeline bounds)
- * - Defines WHAT portion of the asset to play (media bounds)
- * 
- * KEY CONCEPTS:
- * 
- * 1. TIMELINE BOUNDS:
- *    - timelineStart: When the clip appears on the timeline
- *    - timelineEnd: When the clip ends on the timeline
- *    - Duration = timelineEnd - timelineStart
- * 
- * 2. MEDIA BOUNDS:
- *    - mediaIn: Start frame in the source asset
- *    - mediaOut: End frame in the source asset
- *    - Defines which portion of the asset to play
- * 
- * EXAMPLE:
- * ```typescript
- * // A 10-second video asset
- * const asset = { id: 'asset_1', duration: frame(300) };  // 300 frames at 30fps
- * 
- * // A clip that shows 3 seconds of the video (frames 60-150)
- * // starting at 5 seconds on the timeline
- * const clip: Clip = {
- *   id: 'clip_1',
- *   assetId: 'asset_1',
- *   trackId: 'track_1',
- *   timelineStart: frame(150),  // 5 seconds * 30fps
- *   timelineEnd: frame(240),    // 8 seconds * 30fps
- *   mediaIn: frame(60),         // Start at 2 seconds into the asset
- *   mediaOut: frame(150),       // End at 5 seconds into the asset
- * };
- * ```
- * 
- * INVARIANTS (Phase 1 - No Speed Remapping):
- * - timelineEnd > timelineStart
- * - mediaOut > mediaIn
- * - timelineEnd - timelineStart === mediaOut - mediaIn (same duration)
- * - mediaOut <= asset.duration (can't exceed asset bounds)
- * - All frame values must be non-negative
- * 
- * FUTURE: When speed remapping is added, the duration constraint will change.
+ * CLIP MODEL — Phase 0 compliant
+ *
+ * A Clip is a time-bound reference to an Asset placed on a Track.
+ * All fields are readonly. Never mutate — always return a new object.
  */
 
-import { Frame } from './frame';
+import type { TimelineFrame } from './frame';
+import type { AssetId } from './asset';
+import type { TrackId } from './track';
+import type { Effect } from './effect';
+import type { ClipTransform } from './clip-transform';
+import type { AudioProperties } from './audio-properties';
+import type { Transition } from './transition';
+
+// ---------------------------------------------------------------------------
+// Branded ID
+// ---------------------------------------------------------------------------
+
+export type ClipId = string & { readonly __brand: 'ClipId' };
+export const toClipId = (s: string): ClipId => s as ClipId;
+
+// ---------------------------------------------------------------------------
+// Clip
+// ---------------------------------------------------------------------------
 
 /**
- * Clip - A time-bound reference to an Asset
+ * Clip — a time-bound viewport into an Asset on a Track.
+ *
+ * TIMELINE BOUNDS: timelineStart / timelineEnd — where it sits on the track.
+ * MEDIA BOUNDS:    mediaIn / mediaOut         — which portion of the asset plays.
+ *
+ * INVARIANTS (Phase 0, speed=1.0):
+ *   timelineEnd > timelineStart
+ *   mediaOut > mediaIn
+ *   (mediaOut - mediaIn) === (timelineEnd - timelineStart)
+ *   mediaIn >= 0
+ *   mediaOut <= asset.intrinsicDuration
+ *   timelineEnd <= timeline.duration
+ *   speed > 0
  */
-export interface Clip {
-  /** Unique identifier */
-  id: string;
-  
-  /** Reference to the asset this clip uses */
-  assetId: string;
-  
-  /** Reference to the track this clip belongs to */
-  trackId: string;
-  
-  // === TIMELINE BOUNDS (when the clip appears) ===
-  
-  /** Start frame on the timeline */
-  timelineStart: Frame;
-  
-  /** End frame on the timeline */
-  timelineEnd: Frame;
-  
-  // === MEDIA BOUNDS (which part of the asset to play) ===
-  
-  /** Start frame in the source asset */
-  mediaIn: Frame;
-  
-  /** End frame in the source asset */
-  mediaOut: Frame;
-  
-  /** Optional label for the clip */
-  label?: string;
-  
-  /** Optional metadata for custom use cases */
-  metadata?: Record<string, unknown>;
-  
-  // === PHASE 2: LINKING & GROUPING ===
-  
-  /** Optional link group ID - clips in same group move/delete together */
-  linkGroupId?: string;
-  
-  /** Optional group ID - for visual organization */
-  groupId?: string;
-}
+export type Clip = {
+  readonly id: ClipId;
+  readonly assetId: AssetId;
+  readonly trackId: TrackId;
 
-/**
- * Create a new clip
- * 
- * @param params - Clip parameters
- * @returns A new Clip object
- */
+  // — Timeline bounds —
+  readonly timelineStart: TimelineFrame;
+  readonly timelineEnd: TimelineFrame;
+
+  // — Media bounds —
+  readonly mediaIn: TimelineFrame;
+  readonly mediaOut: TimelineFrame;
+
+  readonly speed: number;       // 1.0 = normal, > 0 always
+  readonly enabled: boolean;
+  readonly reversed: boolean;
+  readonly name: string | null;
+  readonly color: string | null;
+  readonly metadata: Record<string, string>;
+  // — Phase 4 —
+  readonly effects?: readonly Effect[];
+  readonly transform?: ClipTransform;
+  readonly audio?: AudioProperties;
+  readonly transition?: Transition;
+};
+
+// ---------------------------------------------------------------------------
+// Factory
+// ---------------------------------------------------------------------------
+
 export function createClip(params: {
   id: string;
   assetId: string;
   trackId: string;
-  timelineStart: Frame;
-  timelineEnd: Frame;
-  mediaIn: Frame;
-  mediaOut: Frame;
-  label?: string;
-  metadata?: Record<string, unknown>;
+  timelineStart: TimelineFrame;
+  timelineEnd: TimelineFrame;
+  mediaIn: TimelineFrame;
+  mediaOut: TimelineFrame;
+  speed?: number;
+  enabled?: boolean;
+  reversed?: boolean;
+  name?: string | null;
+  color?: string | null;
+  metadata?: Record<string, string>;
+  effects?: readonly Effect[];
+  transform?: ClipTransform;
+  audio?: AudioProperties;
+  transition?: Transition;
 }): Clip {
-  const clip: Clip = {
-    id: params.id,
-    assetId: params.assetId,
-    trackId: params.trackId,
+  return {
+    id: params.id as ClipId,
+    assetId: params.assetId as AssetId,
+    trackId: params.trackId as TrackId,
     timelineStart: params.timelineStart,
     timelineEnd: params.timelineEnd,
     mediaIn: params.mediaIn,
     mediaOut: params.mediaOut,
+    speed: params.speed ?? 1.0,
+    enabled: params.enabled ?? true,
+    reversed: params.reversed ?? false,
+    name: params.name ?? null,
+    color: params.color ?? null,
+    metadata: params.metadata ?? {},
+    ...(params.effects !== undefined && { effects: params.effects }),
+    ...(params.transform !== undefined && { transform: params.transform }),
+    ...(params.audio !== undefined && { audio: params.audio }),
+    ...(params.transition !== undefined && { transition: params.transition }),
   };
-  
-  if (params.label !== undefined) {
-    clip.label = params.label;
-  }
-  
-  if (params.metadata !== undefined) {
-    clip.metadata = params.metadata;
-  }
-  
-  return clip;
 }
 
-/**
- * Get the timeline duration of a clip
- * 
- * @param clip - The clip
- * @returns Duration in frames
- */
-export function getClipDuration(clip: Clip): Frame {
-  return (clip.timelineEnd - clip.timelineStart) as Frame;
+// ---------------------------------------------------------------------------
+// Pure helpers
+// ---------------------------------------------------------------------------
+
+export function getClipDuration(clip: Clip): TimelineFrame {
+  return (clip.timelineEnd - clip.timelineStart) as TimelineFrame;
 }
 
-/**
- * Get the media duration of a clip
- * 
- * @param clip - The clip
- * @returns Duration in frames
- */
-export function getClipMediaDuration(clip: Clip): Frame {
-  return (clip.mediaOut - clip.mediaIn) as Frame;
+export function getClipMediaDuration(clip: Clip): TimelineFrame {
+  return (clip.mediaOut - clip.mediaIn) as TimelineFrame;
 }
 
-/**
- * Check if a clip contains a specific frame on the timeline
- * 
- * @param clip - The clip
- * @param frame - The frame to check
- * @returns true if the frame is within the clip's timeline bounds
- */
-export function clipContainsFrame(clip: Clip, frame: Frame): boolean {
-  return frame >= clip.timelineStart && frame < clip.timelineEnd;
+export function clipContainsFrame(clip: Clip, f: TimelineFrame): boolean {
+  return f >= clip.timelineStart && f < clip.timelineEnd;
 }
 
-/**
- * Check if two clips overlap on the timeline
- * 
- * @param clip1 - First clip
- * @param clip2 - Second clip
- * @returns true if the clips overlap
- */
-export function clipsOverlap(clip1: Clip, clip2: Clip): boolean {
-  return clip1.timelineStart < clip2.timelineEnd && clip2.timelineStart < clip1.timelineEnd;
+export function clipsOverlap(a: Clip, b: Clip): boolean {
+  return a.timelineStart < b.timelineEnd && b.timelineStart < a.timelineEnd;
 }

@@ -14,11 +14,18 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
-    /* Linting */
+    /* Linting — relaxed for demo */
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noFallthroughCasesInSwitch": true,
+
+    "paths": {
+      "@webpacked-timeline/core": ["../../packages/core/src/public-api.ts"],
+      "@webpacked-timeline/react": ["../../packages/react/src/index.ts"],
+      "@webpacked-timeline/ui": ["../../packages/ui/src/index.ts"],
+      "@webpacked-timeline/ui/styles/*": ["../../packages/ui/src/*.css"]
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]

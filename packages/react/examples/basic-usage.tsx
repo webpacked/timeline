@@ -1,5 +1,5 @@
 /**
- * @timeline/react - Basic Usage Example
+ * @webpacked-timeline/react - Basic Usage Example
  * 
  * This example demonstrates how to use the React adapter with the timeline core.
  * 
@@ -21,14 +21,14 @@ import {
   createAsset,
   frame,
   frameRate,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 import {
   TimelineProvider,
   useTimeline,
   useTrack,
   useClip,
   useEngine,
-} from '@timeline/react';
+} from '@webpacked-timeline/react';
 
 // Import internal utilities for example
 import {
@@ -36,7 +36,7 @@ import {
   generateTrackId,
   generateClipId,
   generateAssetId,
-} from '@timeline/core/internal';
+} from '@webpacked-timeline/core/internal';
 
 // ===== CREATE ENGINE =====
 

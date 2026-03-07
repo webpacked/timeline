@@ -1,5 +1,5 @@
 /**
- * @timeline/core
+ * @webpacked-timeline/core
  * 
  * A deterministic, frame-based timeline editing kernel with professional editing intelligence.
  * 
@@ -12,7 +12,7 @@
  * Internal systems are not exported and may change without notice.
  * 
  * For internal access (tests, advanced integrations), use:
- * import { ... } from '@timeline/core/internal'
+ * import { ... } from '@webpacked-timeline/core/internal'
  */
 
 export * from './public-api';

@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+/* ── @webpacked-timeline/ui DaVinci Resolve design tokens ── */
+@theme {
+  /* Track */
+  --color-tl-track-video: hsl(220 15% 14%);
+  --color-tl-track-audio: hsl(220 12% 13%);
+  --color-tl-track-border: hsl(220 13% 19%);
+  --color-tl-track-label: hsl(220 13% 10%);
+  --color-tl-track-label-text: hsl(220 10% 62%);
+
+  /* Clip */
+  --color-tl-clip-video: hsl(213 30% 36%);
+  --color-tl-clip-video-top: hsl(213 30% 42%);
+  --color-tl-clip-audio: hsl(198 30% 30%);
+  --color-tl-clip-audio-top: hsl(198 30% 36%);
+  --color-tl-clip-selected: hsl(213 75% 52%);
+  --color-tl-clip-text: hsl(0 0% 92%);
+  --color-tl-clip-text-dim: hsl(0 0% 65%);
+
+  /* Playhead */
+  --color-tl-playhead: hsl(0 88% 56%);
+
+  /* Ruler */
+  --color-tl-ruler: hsl(220 13% 8%);
+  --color-tl-ruler-text: hsl(220 10% 52%);
+  --color-tl-ruler-tick: hsl(220 13% 30%);
+  --color-tl-ruler-tick-major: hsl(220 13% 48%);
+
+  /* Toolbar */
+  --color-tl-toolbar: hsl(220 13% 11%);
+  --color-tl-toolbar-border: hsl(220 13% 17%);
+  --color-tl-toolbar-btn: hsl(220 13% 22%);
+  --color-tl-toolbar-active: hsl(213 45% 32%);
+  --color-tl-toolbar-text: hsl(220 10% 68%);
+
+  /* Timecode */
+  --color-tl-timecode: hsl(35 85% 62%);
+
+  /* Waveform */
+  --color-tl-waveform: hsl(198 60% 42%);
+  --color-tl-waveform-rms: hsl(198 60% 30%);
+
+  /* Keyframe */
+  --color-tl-keyframe: hsl(45 93% 55%);
+
+  /* Sizes */
+  --spacing-tl-track-video: 52px;
+  --spacing-tl-track-audio: 44px;
+  --spacing-tl-ruler: 24px;
+  --spacing-tl-label: 160px;
+}
+
+/* ── CSS variables (for runtime JS access) ── */
+:root {
+  --tl-track-height-video: 52px;
+  --tl-track-height-audio: 44px;
+  --tl-ruler-height: 24px;
+  --tl-label-width: 160px;
+  --tl-clip-radius: 2px;
+  --tl-playhead-width: 1px;
+  --tl-track-bg-video: var(--color-tl-track-video);
+  --tl-track-bg-audio: var(--color-tl-track-audio);
+  --tl-track-border: var(--color-tl-track-border);
+  --tl-track-label-bg: var(--color-tl-track-label);
+  --tl-track-label-text: var(--color-tl-track-label-text);
+  --tl-clip-bg-video: var(--color-tl-clip-video);
+  --tl-clip-bg-audio: var(--color-tl-clip-audio);
+  --tl-clip-bg-selected: var(--color-tl-clip-selected);
+  --tl-clip-bg-provisional: hsl(213 30% 36% / 0.5);
+  --tl-clip-border: hsl(213 30% 50% / 0.3);
+  --tl-clip-border-radius: var(--tl-clip-radius);
+  --tl-clip-text: var(--color-tl-clip-text);
+  --tl-clip-text-sm: var(--color-tl-clip-text-dim);
+  --tl-playhead-color: var(--color-tl-playhead);
+  --tl-playhead-head-size: 6px;
+  --tl-ruler-bg: var(--color-tl-ruler);
+  --tl-ruler-text: var(--color-tl-ruler-text);
+  --tl-ruler-tick: var(--color-tl-ruler-tick);
+  --tl-ruler-tick-major: var(--color-tl-ruler-tick-major);
+  --tl-toolbar-bg: var(--color-tl-toolbar);
+  --tl-toolbar-border: var(--color-tl-toolbar-border);
+  --tl-toolbar-btn-bg: var(--color-tl-toolbar-btn);
+  --tl-toolbar-btn-active: var(--color-tl-toolbar-active);
+  --tl-toolbar-btn-text: var(--color-tl-toolbar-text);
+  --tl-toolbar-btn-radius: 3px;
+  --tl-font-mono: ui-monospace, monospace;
+  --tl-font-size-sm: 10px;
+  --tl-timecode-color: var(--color-tl-timecode);
+  --tl-waveform-color: var(--color-tl-waveform);
+  --tl-waveform-rms: var(--color-tl-waveform-rms);
+}
+
+/* ── Scrollbar styling ── */
+.tl-scroll-area::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.tl-scroll-area::-webkit-scrollbar-track {
+  background: hsl(220 13% 9%);
+}
+
+.tl-scroll-area::-webkit-scrollbar-thumb {
+  background: hsl(220 13% 28%);
+  border-radius: 4px;
+}
+
+.tl-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: hsl(220 13% 35%);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: hsl(220 13% 9%);
+  color: hsl(220 13% 85%);
+  font-family: system-ui, -apple-system, sans-serif;
+}

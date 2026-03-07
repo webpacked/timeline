@@ -1,39 +1,20 @@
 /**
  * HISTORY ENGINE
- * 
+ *
  * Snapshot-based undo/redo system for timeline state.
- * 
- * WHAT IS THE HISTORY ENGINE?
- * - Stores immutable snapshots of timeline state
- * - Provides undo/redo functionality
- * - Prevents state corruption
- * 
- * HOW IT WORKS:
- * - past: Array of previous states
- * - present: Current state
- * - future: Array of states that can be redone
- * 
- * WHY SNAPSHOTS?
- * - Simple and reliable (no complex diffing)
- * - Guaranteed to restore exact state
- * - No risk of partial corruption
- * - Easy to implement and test
- * 
- * USAGE:
- * ```typescript
- * let history = createHistory(initialState);
- * history = pushHistory(history, newState);
- * history = undo(history);
- * history = redo(history);
- * ```
- * 
- * ALL FUNCTIONS ARE PURE:
- * - Take history as input
- * - Return new history as output
- * - Never mutate input
+ *
+ * Two APIs:
+ * - HistoryState + pure functions (createHistory, pushHistory, undo, redo)
+ * - HistoryStack class with compression, checkpoints, and persistence
  */
 
 import { TimelineState } from '../types/state';
+import type { Transaction } from '../types/operations';
+import type { CompressionPolicy } from '../types/compression';
+import { DEFAULT_COMPRESSION_POLICY } from '../types/compression';
+import { TransactionCompressor } from './transaction-compressor';
+import { serializeTimeline, deserializeTimeline } from './serializer';
+import { SerializationError } from './serialization-error';
 
 /**
  * HistoryState - The history container
@@ -195,4 +176,166 @@ export function clearHistory(history: HistoryState): HistoryState {
     past: [],
     future: [],
   };
+}
+
+// ---------------------------------------------------------------------------
+// HistoryStack — Phase 7 Step 3 (compression, checkpoints, persistence)
+// ---------------------------------------------------------------------------
+
+export type HistoryEntry = {
+  readonly state: TimelineState;
+  readonly transaction: Transaction;
+};
+
+export class HistoryStack {
+  private entries: HistoryEntry[] = [];
+  private undoIndex = -1;
+  private limit: number;
+  private compressor: TransactionCompressor;
+  private clock: () => number;
+  private checkpoints: Map<string, number> = new Map();
+
+  constructor(
+    limit: number = 100,
+    policy: CompressionPolicy = DEFAULT_COMPRESSION_POLICY,
+    clock: () => number = Date.now,
+  ) {
+    this.limit = limit;
+    this.clock = clock;
+    this.compressor = new TransactionCompressor(policy, clock);
+  }
+
+  push(entry: HistoryEntry): void {
+    if (this.entries.length === 0) {
+      this.entries.push(entry);
+      this.undoIndex = 0;
+      return;
+    }
+    this.entries.push(entry);
+    if (this.entries.length > this.limit) {
+      this.entries.shift();
+      this.undoIndex = this.entries.length - 1;
+    } else {
+      this.undoIndex = this.entries.length - 1;
+    }
+  }
+
+  pushWithCompression(entry: HistoryEntry, transaction: Transaction): void {
+    const now = this.clock();
+    if (this.compressor.shouldCompress(transaction, now)) {
+      if (this.entries.length > 0) {
+        this.entries[this.entries.length - 1] = entry;
+        this.compressor.record(transaction, now);
+        return;
+      }
+    }
+    this.push(entry);
+    this.compressor.record(transaction, now);
+  }
+
+  resetCompression(): void {
+    this.compressor.reset();
+  }
+
+  undo(): TimelineState | null {
+    if (this.undoIndex <= 0) return null;
+    this.undoIndex--;
+    return this.entries[this.undoIndex]!.state;
+  }
+
+  redo(): TimelineState | null {
+    if (this.undoIndex >= this.entries.length - 1) return null;
+    this.undoIndex++;
+    return this.entries[this.undoIndex]!.state;
+  }
+
+  getCurrentState(): TimelineState | null {
+    if (this.entries.length === 0) return null;
+    return this.entries[this.undoIndex]!.state;
+  }
+
+  canUndo(): boolean {
+    return this.undoIndex > 0;
+  }
+
+  canRedo(): boolean {
+    return this.undoIndex < this.entries.length - 1;
+  }
+
+  saveCheckpoint(name: string): void {
+    this.checkpoints.set(name, this.undoIndex);
+  }
+
+  restoreCheckpoint(name: string): HistoryEntry | null {
+    const idx = this.checkpoints.get(name);
+    if (idx === undefined) return null;
+    if (idx >= this.entries.length) return null;
+    return this.entries[idx] ?? null;
+  }
+
+  listCheckpoints(): string[] {
+    return [...this.checkpoints.keys()];
+  }
+
+  clearCheckpoint(name: string): void {
+    this.checkpoints.delete(name);
+  }
+
+  serialize(): string {
+    const payload = {
+      version: 1,
+      undoIndex: this.undoIndex,
+      entries: this.entries.map((e) => ({
+        state: serializeTimeline(e.state),
+        transaction: e.transaction,
+      })),
+    };
+    return JSON.stringify(payload);
+  }
+
+  static deserialize(
+    raw: string,
+    limit?: number,
+    policy: CompressionPolicy = DEFAULT_COMPRESSION_POLICY,
+    clock: () => number = Date.now,
+  ): HistoryStack {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Invalid JSON';
+      throw new SerializationError(msg);
+    }
+    if (!parsed || typeof parsed !== 'object' || !('version' in parsed)) {
+      throw new SerializationError('Invalid history structure');
+    }
+    const obj = parsed as { version: number; undoIndex: number; entries: Array<{ state: string; transaction: Transaction }> };
+    if (obj.version !== 1) {
+      throw new SerializationError(`Unknown history version: ${obj.version}`);
+    }
+    if (!Array.isArray(obj.entries)) {
+      throw new SerializationError('Missing entries');
+    }
+    const entries: HistoryEntry[] = [];
+    for (const e of obj.entries) {
+      if (typeof e.state !== 'string' || !e.transaction) {
+        throw new SerializationError('Invalid entry');
+      }
+      entries.push({
+        state: deserializeTimeline(e.state),
+        transaction: e.transaction,
+      });
+    }
+    const stack = new HistoryStack(limit ?? entries.length + 50, policy, clock);
+    stack.entries = entries;
+    stack.undoIndex =
+      entries.length === 0
+        ? -1
+        : Math.min(Math.max(0, obj.undoIndex), entries.length - 1);
+    return stack;
+  }
+
+  softLimitWarning(): boolean {
+    return this.entries.length >= this.limit * 0.8;
+  }
 }

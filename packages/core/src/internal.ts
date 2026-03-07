@@ -1,5 +1,5 @@
 /**
- * @timeline/core - Internal API
+ * @webpacked-timeline/core - Internal API
  * 
  * This file exports internal systems, operations, and utilities.
  * 
@@ -58,54 +58,11 @@ export {
   unregisterAsset,
 } from './systems/asset-registry';
 
-// Snapping
-export type { SnapTarget, SnapResult } from './systems/snapping';
-export {
-  findSnapTargets,
-  calculateSnap,
-  calculateSnapExcluding,
-  findSnapTargetsForTrack,
-} from './systems/snapping';
-
-// Linking
-export {
-  createLinkGroup,
-  breakLinkGroup,
-  getLinkedClips,
-  isClipLinked,
-  getLinkGroup,
-  addClipToLinkGroup,
-  removeClipFromLinkGroup,
-} from './systems/linking';
-
-// Grouping
-export {
-  createGroup,
-  ungroupClips,
-  getGroupClips,
-  isClipGrouped,
-  getGroup,
-  addClipToGroup,
-  removeClipFromGroup,
-  renameGroup,
-  getChildGroups,
-} from './systems/grouping';
-
-// Clipboard
-export type { ClipboardData } from './systems/clipboard';
-export {
-  copyClips,
-  cutClips,
-  pasteClips,
-  duplicateClips,
-} from './systems/clipboard';
-
-// Drag State
-export type { DragState } from './systems/drag-state';
-export {
-  calculateDragPreview,
-  calculateResizeDragPreview,
-} from './systems/drag-state';
+// Snapping — Phase 2 (snap-index.ts replaced this)
+// Linking   — Phase 4
+// Grouping  — Phase 4
+// Clipboard — Phase 4
+// DragState — Phase 1 adapter (lives in packages/react)
 
 // ========================================
 // INTERNAL OPERATIONS
@@ -136,34 +93,18 @@ export {
 export {
   setTimelineDuration,
   setTimelineName,
-  updateTimelineMetadata,
 } from './operations/timeline-operations';
 
-// Marker Operations
-export {
-  addTimelineMarker,
-  addClipMarker,
-  addRegionMarker,
-  removeMarker,
-  removeClipMarkers,
-  setWorkArea,
-  clearWorkArea,
-  updateTimelineMarker,
-  updateRegionMarker,
-} from './operations/marker-operations';
-
-// Linked Operations
-export {
-  moveLinkedClips,
-  deleteLinkedClips,
-  offsetLinkedClips,
-} from './operations/linked-operations';
+// Marker Operations — Phase 3
+// Linked Operations — Phase 4
 
 // Ripple Operations
 export {
   rippleDelete,
   rippleTrim,
   insertEdit,
+  rippleMove,
+  insertMove,
 } from './operations/ripple';
 
 // ========================================
@@ -197,8 +138,11 @@ export {
 
 export {
   isValidFrame,
-  isValidFrameRate,
+  isDropFrame,
 } from './types/frame';
+
+// Frame type alias for test backward compat (tests import `type Frame`)
+export type { TimelineFrame as Frame, TimelineFrame } from './types/frame';
 
 // Clip Utilities
 export {
@@ -225,15 +169,11 @@ export {
 // INTERNAL ENGINE COMPONENTS
 // ========================================
 
-// Transactions
-export type { Operation, TransactionContext, TransactionResult } from './engine/transactions';
-export {
-  beginTransaction,
-  applyOperation,
-  commitTransaction,
-  rollbackTransaction,
-  getOperationCount,
-} from './engine/transactions';
+// Dispatcher & Operations
+export type { DispatchResult, Transaction, OperationPrimitive, InvariantViolation, ViolationType, RejectionReason } from './types/operations';
+export { dispatch } from './engine/dispatcher';
+export { checkInvariants } from './validation/invariants';
 
-// Dispatcher
-export type { DispatchResult } from './engine/dispatcher';
+// TimelineEngine — for test files
+export { TimelineEngine } from './engine/timeline-engine';
+
