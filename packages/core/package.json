@@ -1,5 +1,5 @@
 {
-  "name": "@timeline/core",
+  "name": "@webpacked-timeline/core",
   "version": "1.0.0-beta.1",
   "description": "Headless TypeScript engine for professional NLE timeline editing. Framework-agnostic, fully tested.",
   "type": "module",

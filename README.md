@@ -6,21 +6,21 @@ Professional open-source NLE (Non-Linear Editor) timeline engine for the web.
 
 | Package | Description | Version |
 |---------|-------------|---------|
-| [`@timeline/core`](packages/core) | Headless TypeScript engine | 1.0.0-beta.1 |
-| [`@timeline/react`](packages/react) | React adapter + hooks | 1.0.0-beta.1 |
-| [`@timeline/ui`](packages/ui) | DaVinci-style UI preset | 1.0.0-beta.1 |
+| [`@webpacked-timeline/core`](packages/core) | Headless TypeScript engine | 1.0.0-beta.1 |
+| [`@webpacked-timeline/react`](packages/react) | React adapter + hooks | 1.0.0-beta.1 |
+| [`@webpacked-timeline/ui`](packages/ui) | DaVinci-style UI preset | 1.0.0-beta.1 |
 
 ## Quick Start
 
 ```bash
-npm install @timeline/ui @timeline/react @timeline/core
+npm install @webpacked-timeline/ui @webpacked-timeline/react @webpacked-timeline/core
 ```
 
 ```tsx
-import { DaVinciEditor } from '@timeline/ui';
-import '@timeline/ui/styles/davinci';
-import { TimelineEngine } from '@timeline/react';
-import { createTimelineState, createTimeline, toFrame, frameRate } from '@timeline/core';
+import { DaVinciEditor } from '@webpacked-timeline/ui';
+import '@webpacked-timeline/ui/styles/davinci';
+import { TimelineEngine } from '@webpacked-timeline/react';
+import { createTimelineState, createTimeline, toFrame, frameRate } from '@webpacked-timeline/core';
 
 const engine = new TimelineEngine({
   initialState: createTimelineState({
@@ -42,14 +42,14 @@ export default function App() {
 
 ```
 Your App
-└── @timeline/ui       → DaVinci-style components (React)
-    └── @timeline/react  → Hooks, context, TimelineEngine
-        └── @timeline/core   → Pure TypeScript engine (zero deps)
+└── @webpacked-timeline/ui       → DaVinci-style components (React)
+    └── @webpacked-timeline/react  → Hooks, context, TimelineEngine
+        └── @webpacked-timeline/core   → Pure TypeScript engine (zero deps)
 ```
 
-- **@timeline/core** is framework-agnostic. Runs in browser, Node.js, Web Workers, Electron.
-- **@timeline/react** provides `TimelineEngine` (wires core's dispatcher, history, tools, playback) and 20+ hooks.
-- **@timeline/ui** provides drop-in `DaVinciEditor` with toolbar, ruler, tracks, clips, playhead, and full keyboard shortcuts.
+- **@webpacked-timeline/core** is framework-agnostic. Runs in browser, Node.js, Web Workers, Electron.
+- **@webpacked-timeline/react** provides `TimelineEngine` (wires core's dispatcher, history, tools, playback) and 20+ hooks.
+- **@webpacked-timeline/ui** provides drop-in `DaVinciEditor` with toolbar, ruler, tracks, clips, playhead, and full keyboard shortcuts.
 
 ## Features
 

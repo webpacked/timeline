@@ -1,5 +1,5 @@
 {
-  "name": "@timeline/demo",
+  "name": "@webpacked-timeline/demo",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -9,9 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@timeline/core": "workspace:*",
-    "@timeline/react": "workspace:*",
-    "@timeline/ui": "workspace:*",
+    "@webpacked-timeline/core": "workspace:*",
+    "@webpacked-timeline/react": "workspace:*",
+    "@webpacked-timeline/ui": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

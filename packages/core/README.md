@@ -5,7 +5,7 @@ Headless TypeScript engine for professional NLE timeline editing. Framework-agno
 ## Install
 
 ```bash
-npm install @timeline/core
+npm install @webpacked-timeline/core
 ```
 
 ## Features
@@ -39,7 +39,7 @@ import {
   toClipId,
   toAssetId,
   frameRate,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // 1. Build initial state
 const state = createTimelineState({
@@ -85,7 +85,7 @@ if (result.ok) {
 ## Playback
 
 ```typescript
-import { PlaybackEngine, browserClock } from '@timeline/core';
+import { PlaybackEngine, browserClock } from '@webpacked-timeline/core';
 
 const playback = new PlaybackEngine(
   state,
@@ -107,7 +107,7 @@ import {
   exportToEDL,
   exportToAAF,
   exportToFCPXML,
-} from '@timeline/core';
+} from '@webpacked-timeline/core';
 
 // JSON round-trip
 const json = serializeTimeline(state);

@@ -1,7 +1,7 @@
 {
-  "name": "@timeline/react",
+  "name": "@webpacked-timeline/react",
   "version": "1.0.0-beta.1",
-  "description": "React adapter for @timeline/core. Hooks, context, and tool routing for building timeline editors.",
+  "description": "React adapter for @webpacked-timeline/core. Hooks, context, and tool routing for building timeline editors.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -23,11 +23,11 @@
     "test:coverage": "vitest run --coverage"
   },
   "peerDependencies": {
-    "@timeline/core": ">=1.0.0-beta.1",
+    "@webpacked-timeline/core": ">=1.0.0-beta.1",
     "react": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
-    "@timeline/core": "workspace:*"
+    "@webpacked-timeline/core": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",

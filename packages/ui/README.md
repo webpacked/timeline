@@ -5,16 +5,16 @@ DaVinci-style React timeline editor. One import. Full professional timeline.
 ## Install
 
 ```bash
-npm install @timeline/ui @timeline/react @timeline/core
+npm install @webpacked-timeline/ui @webpacked-timeline/react @webpacked-timeline/core
 ```
 
 ## Quick Start (30 seconds)
 
 ```tsx
-import { DaVinciEditor } from '@timeline/ui';
-import '@timeline/ui/styles/davinci';
-import { TimelineEngine } from '@timeline/react';
-import { createTimelineState, createTimeline, toFrame, frameRate } from '@timeline/core';
+import { DaVinciEditor } from '@webpacked-timeline/ui';
+import '@webpacked-timeline/ui/styles/davinci';
+import { TimelineEngine } from '@webpacked-timeline/react';
+import { createTimelineState, createTimeline, toFrame, frameRate } from '@webpacked-timeline/core';
 
 const engine = new TimelineEngine({
   initialState: createTimelineState({
@@ -65,8 +65,8 @@ interface DaVinciEditorProps {
 For custom layouts, use the context directly:
 
 ```tsx
-import { TimelineProvider, useTimelineContext, useEngine } from '@timeline/ui';
-import { frameToPx, pxToFrame, frameToTimecode } from '@timeline/ui';
+import { TimelineProvider, useTimelineContext, useEngine } from '@webpacked-timeline/ui';
+import { frameToPx, pxToFrame, frameToTimecode } from '@webpacked-timeline/ui';
 ```
 
 ## Theming
@@ -74,7 +74,7 @@ import { frameToPx, pxToFrame, frameToTimecode } from '@timeline/ui';
 All visual properties are controlled by CSS custom properties. Import the DaVinci theme:
 
 ```css
-@import '@timeline/ui/styles/davinci';
+@import '@webpacked-timeline/ui/styles/davinci';
 ```
 
 Override any token in your CSS:
@@ -108,7 +108,7 @@ Override any token in your CSS:
 | `--tl-label-width` | `200px` | Track label column width |
 | `--tl-snap-color` | `hsl(45 90% 60%)` | Snap indicator color |
 
-See [tokens.css](src/tokens.css) for the full list of ~50 tokens.
+See [tokens.css](src/tokens.css) for the full list of ~50 tokens. All colors controlled by CSS variables — no hardcoded colors in components.
 
 ## Keyboard Shortcuts
 

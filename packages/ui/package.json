@@ -1,7 +1,7 @@
 {
-  "name": "@timeline/ui",
+  "name": "@webpacked-timeline/ui",
   "version": "1.0.0-beta.1",
-  "description": "DaVinci-style React timeline UI. Drop-in components built on @timeline/core and @timeline/react.",
+  "description": "DaVinci-style React timeline UI. Drop-in components built on @webpacked-timeline/core and @webpacked-timeline/react.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,12 +25,12 @@
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",
     "react-dom": "^18.0.0 || ^19.0.0",
-    "@timeline/core": ">=1.0.0-beta.1",
-    "@timeline/react": ">=1.0.0-beta.1"
+    "@webpacked-timeline/core": ">=1.0.0-beta.1",
+    "@webpacked-timeline/react": ">=1.0.0-beta.1"
   },
   "devDependencies": {
-    "@timeline/core": "workspace:*",
-    "@timeline/react": "workspace:*",
+    "@webpacked-timeline/core": "workspace:*",
+    "@webpacked-timeline/react": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "@types/react": "^18.0.0",

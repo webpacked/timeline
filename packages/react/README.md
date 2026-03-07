@@ -5,16 +5,16 @@ React adapter for `@timeline/core`. Provides `TimelineEngine`, hooks, context, a
 ## Install
 
 ```bash
-npm install @timeline/core @timeline/react
+npm install @webpacked-timeline/core @webpacked-timeline/react
 ```
 
-Both packages are required. `@timeline/core` is a peer dependency.
+Both packages are required. `@webpacked-timeline/core` is a peer dependency.
 
 ## Quick Start
 
 ```tsx
-import { TimelineEngine, TimelineProvider, useTrackIds, usePlayheadFrame } from '@timeline/react';
-import { createTimelineState, createTimeline, toFrame, frameRate } from '@timeline/core';
+import { TimelineEngine, TimelineProvider, useTrackIds, usePlayheadFrame } from '@webpacked-timeline/react';
+import { createTimelineState, createTimeline, toFrame, frameRate } from '@webpacked-timeline/core';
 
 const engine = new TimelineEngine({
   initialState: createTimelineState({
